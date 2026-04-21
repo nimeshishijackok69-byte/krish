@@ -12,6 +12,17 @@ import formRoutes from './routes/forms.js';
 import submissionRoutes from './routes/submissions.js';
 import statsRoutes from './routes/stats.js';
 import auditRoutes from './routes/audit.js';
+import userRoutes from './routes/users.js';
+import notificationRoutes from './routes/notifications.js';
+import reviewLevelRoutes from './routes/reviewLevels.js';
+import reviewRoutes from './routes/reviews.js';
+import shortlistRoutes from './routes/shortlist.js';
+import reviewScoreRoutes from './routes/reviewScores.js';
+import commentRoutes from './routes/comments.js';
+import nominationRoutes from './routes/nominations.js';
+import formVersionRoutes from './routes/formVersions.js';
+import emailTemplateRoutes from './routes/emailTemplates.js';
+import reminderScheduleRoutes from './routes/reminderSchedules.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,6 +63,17 @@ app.use('/api/v1/forms', formRoutes);
 app.use('/api/v1/submissions', submissionRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/audit-logs', auditRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/review-levels', reviewLevelRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
+app.use('/api/v1/shortlist', shortlistRoutes);
+app.use('/api/v1/review-scores', reviewScoreRoutes);
+app.use('/api/v1/comments', commentRoutes);
+app.use('/api/v1/nominations', nominationRoutes);
+app.use('/api/v1/form-versions', formVersionRoutes);
+app.use('/api/v1/email-templates', emailTemplateRoutes);
+app.use('/api/v1/reminder-schedules', reminderScheduleRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
