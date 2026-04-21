@@ -72,7 +72,7 @@ export default function UserManagement() {
         <div className="flex items-center gap-2">
           <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:bg-slate-900 shadow-sm"><Upload size={14} /> Import CSV</button>
           <button onClick={exportCSV} className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:bg-slate-900 shadow-sm"><Download size={14} /> Export</button>
-          <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-light shadow-sm min-h-[44px]"><UserPlus size={16} /> Add User</button>
+          <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover shadow-sm min-h-[44px]"><UserPlus size={16} /> Add User</button>
         </div>
       </div>
 
@@ -106,7 +106,7 @@ export default function UserManagement() {
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
-          <button onClick={handleSave} className="px-6 py-2 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light">Save</button>
+          <button onClick={handleSave} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover">Save</button>
         </div>
       </Modal>
 
@@ -119,7 +119,7 @@ export default function UserManagement() {
           <textarea value={importText} onChange={e => setImportText(e.target.value)} rows={8} placeholder="Paste CSV data here..." className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-sm outline-none font-mono resize-none" />
           <div className="flex justify-end gap-3">
             <button onClick={() => setShowImport(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
-            <button onClick={handleBulkImport} disabled={!importText.trim()} className="px-6 py-2 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light disabled:opacity-50">Import</button>
+            <button onClick={handleBulkImport} disabled={!importText.trim()} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover disabled:opacity-50">Import</button>
           </div>
         </div>
       </Modal>

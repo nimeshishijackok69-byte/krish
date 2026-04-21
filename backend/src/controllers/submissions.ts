@@ -5,8 +5,15 @@ import { AuthRequest } from '../middleware/auth.js';
 
 export const submitForm = async (req: AuthRequest, res: Response) => {
   try {
-    const { form_id, formId, responses } = req.body;
+    let { form_id, formId, responses } = req.body;
     const actualFormId = form_id || formId;
+
+    // Convert object responses to array if needed
+    if (responses && !Array.isArray(responses)) {
+      responses = Object.entries(responses).map(([fieldId, value]) => ({ fieldId, value }));
+    }
+    
+    if (!responses) responses = [];
     
     const form = await Form.findById(actualFormId);
     if (!form) return res.status(404).json({ error: 'Form not found' });
@@ -18,19 +25,20 @@ export const submitForm = async (req: AuthRequest, res: Response) => {
 
     // Scoring for Quizzes
     let score = null;
-    const quizFields = form.fields.filter(f => f.type === 'mcq' && (f as any).correct);
-    if (quizFields.length > 0) {
-      let earnedPoints = 0;
-      let totalPoints = 0;
-      responses.forEach((resp: any) => {
-        const field = form.fields.find(f => f.id === resp.fieldId);
-        if (field && field.type === 'mcq') {
-          totalPoints += field.points || 0;
-          if (resp.value === (field as any).correct) {
-            earnedPoints += field.points || 0;
-          }
-        }
-      });
+    let earnedPoints = 0;
+    let totalPoints = 0;
+    
+    // Fallback to recalculate if not provided by frontend
+    if (req.body.score !== undefined && req.body.score !== null) {
+      earnedPoints = req.body.score;
+      // Extract max score
+      if (form.form_schema && form.form_schema.sections) {
+        form.form_schema.sections.forEach((sec: any) => {
+          sec.fields?.forEach((f: any) => {
+            if (f.type === 'mcq') totalPoints += f.marks || 1;
+          });
+        });
+      }
       const percentage = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
       score = {
         earnedPoints,
@@ -38,6 +46,30 @@ export const submitForm = async (req: AuthRequest, res: Response) => {
         percentage,
         passed: percentage >= (form.settings?.passing_score || 0)
       };
+    } else if (form.form_schema && form.form_schema.sections) {
+      form.form_schema.sections.forEach((sec: any) => {
+        sec.fields?.forEach((field: any) => {
+          if (field.type === 'mcq' && field.correct !== undefined) {
+            totalPoints += field.marks || 1;
+            const resp = responses.find((r: any) => r.fieldId === field.id);
+            if (resp && String(resp.value) === String(field.correct)) {
+              earnedPoints += field.marks || 1;
+            } else if (resp && form.settings?.negative_marking) {
+              earnedPoints -= field.negative || 0;
+            }
+          }
+        });
+      });
+      if (totalPoints > 0) {
+        earnedPoints = Math.max(0, earnedPoints);
+        const percentage = (earnedPoints / totalPoints) * 100;
+        score = {
+          earnedPoints,
+          totalPoints,
+          percentage,
+          passed: percentage >= (form.settings?.passing_score || 0)
+        };
+      }
     }
 
     const submission = await Submission.create({
@@ -64,9 +96,15 @@ export const submitForm = async (req: AuthRequest, res: Response) => {
 
 export const updateSubmission = async (req: AuthRequest, res: Response) => {
   try {
-    const { id, is_draft } = req.body;
+    let { id, is_draft, responses } = req.body;
+    
+    if (responses && !Array.isArray(responses)) {
+      responses = Object.entries(responses).map(([fieldId, value]) => ({ fieldId, value }));
+    }
+
     const submission = await Submission.findByIdAndUpdate(id, {
       ...req.body,
+      responses: responses || req.body.responses,
       isDraft: is_draft !== undefined ? is_draft : req.body.isDraft
     }, { new: true });
     if (!submission) return res.status(404).json({ error: 'Submission not found' });

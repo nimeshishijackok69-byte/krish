@@ -160,7 +160,7 @@ function SmtpTab() {
           <button onClick={testConnection} disabled={testing} className="px-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold hover:bg-white dark:bg-slate-800 flex items-center gap-2 min-h-[44px] disabled:opacity-50">
             {testing ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />} Test Connection
           </button>
-          <button onClick={saveConfig} disabled={saving} className="px-6 py-2.5 bg-navy text-white rounded-xl text-sm font-bold hover:bg-navy-light flex items-center gap-2 min-h-[44px] disabled:opacity-50">
+          <button onClick={saveConfig} disabled={saving} className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-hover flex items-center gap-2 min-h-[44px] disabled:opacity-50">
             {saving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />} {editId ? 'Update' : 'Save'} Config
           </button>
           {editId && <button onClick={() => { setEditId(null); setForm({ name: '', host: 'smtp.gmail.com', port: 587, encryption: 'starttls', username: '', password: '', from_email: 'noreply@cbss.school.org', from_name: 'CBSS Data Collection', is_active: true }); }} className="px-4 py-2.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white">Cancel</button>}
@@ -209,7 +209,7 @@ function TemplatesTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500 dark:text-slate-400">{templates.length} templates ({templates.filter(t => ['otp', 'invite', 'reminder', 'confirmation'].includes(t.type)).length} built-in)</p>
-        <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-light min-h-[44px]"><Plus size={15} /> New Template</button>
+        <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover min-h-[44px]"><Plus size={15} /> New Template</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -255,7 +255,7 @@ function TemplatesTab() {
           </div>
           <div className="flex justify-end gap-3">
             <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
-            <button onClick={handleSave} className="px-6 py-2 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light">{editTpl ? 'Update' : 'Create'} Template</button>
+            <button onClick={handleSave} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover">{editTpl ? 'Update' : 'Create'} Template</button>
           </div>
         </div>
       </Modal>
@@ -482,7 +482,7 @@ function SendTab() {
             {/* Actions */}
             <div className="flex gap-3 pt-2">
               <button onClick={() => setShowPreview(true)} disabled={!selectedTemplate} className="px-4 py-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold hover:bg-white dark:bg-slate-800 flex items-center gap-2 min-h-[44px] disabled:opacity-50"><Eye size={14} /> Preview</button>
-              <button onClick={handleSend} disabled={sending || !selectedTemplate || recipients.length === 0} className="flex-1 px-6 py-2.5 bg-navy text-white rounded-xl text-sm font-bold hover:bg-navy-light flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-50">
+              <button onClick={handleSend} disabled={sending || !selectedTemplate || recipients.length === 0} className="flex-1 px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-hover flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-50">
                 {sending ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />} Send to {recipients.length} recipient{recipients.length !== 1 ? 's' : ''}
               </button>
             </div>
@@ -568,7 +568,7 @@ function RemindersTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500 dark:text-slate-400">{schedules.length} reminder schedule{schedules.length !== 1 ? 's' : ''}</p>
-        <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-light min-h-[44px]"><Plus size={15} /> New Schedule</button>
+        <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover min-h-[44px]"><Plus size={15} /> New Schedule</button>
       </div>
 
       <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
@@ -641,7 +641,7 @@ function RemindersTab() {
           </div>
           <div className="flex justify-end gap-3">
             <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
-            <button onClick={createSchedule} className="px-6 py-2 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light">Create Schedule</button>
+            <button onClick={createSchedule} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover">Create Schedule</button>
           </div>
         </div>
       </Modal>

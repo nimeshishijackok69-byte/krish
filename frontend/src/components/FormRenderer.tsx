@@ -5,7 +5,7 @@ import { Clock, Save, Send, ChevronRight, CheckCircle, AlertCircle, Upload, X, F
 /* ─── Field schema ─── */
 export interface FormField {
   id: string;
-  type: 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'select' | 'radio' | 'checkbox' | 'file' | 'mcq' | 'rating' | 'section';
+  type: 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'select' | 'dropdown' | 'radio' | 'checkbox' | 'file' | 'mcq' | 'rating' | 'section';
   label: string;
   required?: boolean;
   options?: string[];
@@ -218,6 +218,7 @@ export default function FormRenderer({ fields, formType, settings, initialValues
       case 'date':
         return wrap(<input id={f.id} type="date" value={val || ''} onChange={e => set(f.id, e.target.value)} className={ic} disabled={dis} />);
       case 'select':
+      case 'dropdown':
         return wrap(
           <select id={f.id} value={val || ''} onChange={e => set(f.id, e.target.value)} className={ic} disabled={dis}>
             <option value="">— Select an option —</option>

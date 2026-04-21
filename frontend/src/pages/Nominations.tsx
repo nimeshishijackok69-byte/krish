@@ -82,7 +82,7 @@ export default function Nominations({ user }: { user: User }) {
           <select value={selectedForm} onChange={e => setSelectedForm(parseInt(e.target.value))} className="text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 outline-none">
             <option value={0}>Select Form</option>{forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}</select>
           <button onClick={() => setShowBulk(true)} className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:bg-slate-900"><Upload size={14} /> CSV Import</button>
-          <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-light min-h-[44px]"><UserPlus size={16} /> Add Teacher</button>
+          <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover min-h-[44px]"><UserPlus size={16} /> Add Teacher</button>
         </div>
       </div>
 
@@ -130,7 +130,7 @@ export default function Nominations({ user }: { user: User }) {
           <p className="text-[10px] text-slate-500 dark:text-slate-400">School code <span className="font-bold">{schoolCode}</span> will be auto-attached. Teacher account auto-created if new.</p>
           <div className="flex justify-end gap-3">
             <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
-            <button onClick={handleAddTeacher} className="px-6 py-2 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light">Add & Invite</button>
+            <button onClick={handleAddTeacher} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover">Add & Invite</button>
           </div>
         </div>
       </Modal>
@@ -145,7 +145,7 @@ export default function Nominations({ user }: { user: User }) {
           <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={8} placeholder="Paste CSV data..." className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-sm outline-none font-mono resize-none" />
           <div className="flex justify-end gap-3">
             <button onClick={() => setShowBulk(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
-            <button onClick={handleBulkAdd} disabled={!bulkText.trim()} className="px-6 py-2 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light disabled:opacity-50">Import & Invite</button>
+            <button onClick={handleBulkAdd} disabled={!bulkText.trim()} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover disabled:opacity-50">Import & Invite</button>
           </div>
         </div>
       </Modal>

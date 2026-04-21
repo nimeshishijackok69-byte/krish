@@ -122,7 +122,7 @@ export default function Submissions({ user }: { user: User }) {
               <div className="flex gap-2 mt-3">
                 <input value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Add a comment..." onKeyDown={e => e.key === 'Enter' && addComment()}
                   className="flex-1 px-3 py-2 rounded-xl border border-border bg-surface text-sm outline-none focus:border-primary" />
-                <button onClick={addComment} className="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-light min-h-[44px]"><Send size={14} /></button>
+                <button onClick={addComment} className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover min-h-[44px]"><Send size={14} /></button>
               </div>
             </div>
           </div>

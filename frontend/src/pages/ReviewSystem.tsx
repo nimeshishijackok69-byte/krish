@@ -208,7 +208,7 @@ export default function ReviewSystem({ user }: { user: User }) {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold font-heading flex items-center gap-2"><Layers size={15} className="text-primary" /> Review Pipeline</h3>
                 <button onClick={() => { setLevelForm(p => ({ ...p, level_number: formLevels.length + 1, name: `Level ${formLevels.length + 1}`, reviewer_ids: [] })); setShortlistFilter({ filter_type: formLevels.length > 0 ? 'review_avg_gte' : 'all', filter_value: '0', source_level_id: formLevels.length > 0 ? formLevels[formLevels.length - 1].id : 0, field_id: '', field_value: '' }); setShortlistResult(null); setShowShortlist(true); }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-navy text-white rounded-xl text-xs font-semibold hover:bg-navy-light min-h-[40px]"><Zap size={14} /> Create Shortlist / Next Level</button>
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:bg-primary-hover min-h-[40px]"><Zap size={14} /> Create Shortlist / Next Level</button>
               </div>
 
               {formLevels.length === 0 ? (
@@ -348,7 +348,7 @@ export default function ReviewSystem({ user }: { user: User }) {
 
             <div className="flex justify-end gap-3">
               <button onClick={() => setShowShortlist(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Close</button>
-              <button onClick={createShortlist} className="px-6 py-2 bg-navy text-white text-sm rounded-xl font-bold hover:bg-navy-light flex items-center gap-2"><Zap size={14} /> Create Shortlist</button>
+              <button onClick={createShortlist} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-bold hover:bg-primary-hover flex items-center gap-2"><Zap size={14} /> Create Shortlist</button>
             </div>
           </div>
         </Modal>

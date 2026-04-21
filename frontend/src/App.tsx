@@ -9,6 +9,7 @@ import UserManagement from './pages/UserManagement';
 import Forms from './pages/Forms';
 import FormFill from './pages/FormFill';
 import FormView from './pages/FormView';
+import FormBuilder from './pages/FormBuilder';
 import Submissions from './pages/Submissions';
 import ReviewSystem from './pages/ReviewSystem';
 import Nominations from './pages/Nominations';
@@ -45,7 +46,9 @@ function AppContent() {
         <Route path="/" element={<Dashboard user={user} />} />
         {user.role === 'admin' && <Route path="/users" element={<UserManagement />} />}
         <Route path="/forms" element={<Forms user={user} />} />
-        <Route path="/forms/fill" element={<FormFill user={user} />} />
+        {user.role === 'admin' && <Route path="/forms/new" element={<FormBuilder />} />}
+        {user.role === 'admin' && <Route path="/forms/:id/builder" element={<FormBuilder />} />}
+        <Route path="/fill/:id" element={<FormFill />} />
         <Route path="/forms/view" element={<FormView user={user} />} />
         <Route path="/submissions" element={<Submissions user={user} />} />
         <Route path="/reviews" element={<ReviewSystem user={user} />} />

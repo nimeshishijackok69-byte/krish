@@ -17,7 +17,7 @@ export default function AuditLogs() {
     { key: 'id', label: '#', sortable: true, render: (v: number) => <span className="text-xs font-mono text-slate-500 dark:text-slate-400">#{v}</span> },
     { key: 'user_id', label: 'User', sortable: true, render: (v: number) => <span className="text-xs font-mono font-bold">#{v}</span> },
     { key: 'action', label: 'Action', sortable: true, render: (v: string) => (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-navy/10 text-navy dark:bg-navy/30 dark:text-blue-300 text-[11px] font-bold capitalize">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary dark:bg-primary/30 dark:text-blue-300 text-[11px] font-bold capitalize">
         <Shield size={10} /> {v?.replace(/_/g, ' ')}
       </span>) },
     { key: 'details', label: 'Details', render: (v: string) => {

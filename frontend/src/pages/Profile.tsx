@@ -36,7 +36,7 @@ export default function Profile({ user }: { user: User }) {
             </div>
           </div>
           <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }}
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-light transition-colors min-h-[44px]">
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors min-h-[44px]">
             <Save size={14} /> {saved ? 'Saved!' : 'Save Changes'}
           </button>
         </div>

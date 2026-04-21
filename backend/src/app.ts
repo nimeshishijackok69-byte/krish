@@ -21,7 +21,14 @@ const app = express();
 // Security Middlewares
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests from any localhost port (Vite may use 5173, 5174, etc.)
+    if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, process.env.FRONTEND_URL || 'http://localhost:5173');
+    }
+  },
   credentials: true
 }));
 app.use(cookieParser(process.env.COOKIE_SECRET));

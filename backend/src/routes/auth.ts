@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { login, requestOTP, verifyOTP, logout } from '../controllers/auth.js';
+import { login, requestOTP, verifyOTP, logout, verifySession } from '../controllers/auth.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { User } from '../lib/auth';
 import { api } from '../lib/api';
-import { getTheme, setTheme } from '../lib/theme';
 import { getSessionExpiry } from '../lib/auth';
 import {
   LayoutDashboard, Users, FileText, Inbox, CheckSquare, BarChart3,
@@ -44,7 +43,6 @@ function getNav(role: string) {
 
 export default function Layout({ user, onLogout, children }: { user: User; onLogout: () => void; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(getTheme() === 'dark');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -73,7 +71,6 @@ export default function Layout({ user, onLogout, children }: { user: User; onLog
   }, [onLogout]);
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
-  const toggleDark = () => { const next = !darkMode; setDarkMode(next); setTheme(next ? 'dark' : 'light'); };
   const markAllRead = async () => { await api.put('/notifications', { id: 'all', user_id: user.id, is_read: true }).catch(() => {}); setNotifications(prev => prev.map(n => ({ ...n, is_read: true }))); };
   const breadcrumbs = location.pathname.split('/').filter(Boolean);
   const schoolCode = user.school_code || (user.email?.match(/^head\.([a-z0-9]+)@/i)?.[1]?.toUpperCase());
@@ -89,21 +86,21 @@ export default function Layout({ user, onLogout, children }: { user: User; onLog
         </div>
       )}
 
-      {/* ===== SIDEBAR — dark navy ===== */}
-      <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-[260px] bg-sidebar text-white flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="p-5 flex items-center gap-3 border-b border-white/8">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-accent-green flex items-center justify-center font-bold text-sm shadow-lg">SD</div>
+      {/* ===== SIDEBAR — Vibrant Indigo ===== */}
+      <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-[260px] bg-gradient-to-b from-sidebar-light to-sidebar text-white flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+        <div className="p-5 flex items-center gap-3 border-b border-white/10">
+          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center font-bold text-sm shadow-inner backdrop-blur-md">SD</div>
           <div className="flex-1">
-            <h1 className="font-heading font-bold text-[14px] leading-tight tracking-tight">SchoolData</h1>
-            <p className="text-[9px] text-blue-300/50 uppercase tracking-[0.15em]">Collection Portal</p>
+            <h1 className="font-heading font-bold text-[14px] leading-tight tracking-tight text-white">SchoolData</h1>
+            <p className="text-[9px] text-white/50 uppercase tracking-[0.15em]">Collection Portal</p>
           </div>
           <button className="lg:hidden text-white/60 hover:text-white" onClick={() => setSidebarOpen(false)}><X size={20} /></button>
         </div>
 
         {schoolCode && (
-          <div className="mx-4 mt-3 px-3 py-2 rounded-xl bg-accent-green/15 border border-accent-green/25">
-            <p className="text-[9px] text-accent-green uppercase tracking-wider font-bold">School Code</p>
-            <p className="text-sm font-bold text-accent-green">{schoolCode}</p>
+          <div className="mx-4 mt-3 px-3 py-2 rounded-xl bg-white/10 border border-white/10">
+            <p className="text-[9px] text-white/60 uppercase tracking-wider font-bold">School Code</p>
+            <p className="text-sm font-bold text-white">{schoolCode}</p>
           </div>
         )}
 
@@ -114,22 +111,22 @@ export default function Layout({ user, onLogout, children }: { user: User; onLog
               <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
                   active
-                    ? 'bg-primary text-white shadow-md shadow-primary/30'
-                    : 'text-blue-200/50 hover:bg-white/6 hover:text-white'
+                    ? 'bg-white text-primary shadow-lg shadow-black/10'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}>
-                <item.icon size={17} className={active ? 'text-white' : 'text-blue-300/30'} />
+                <item.icon size={17} className={active ? 'text-primary' : 'text-white/50'} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/8">
+        <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-xs font-bold text-white">{user.name?.charAt(0)?.toUpperCase()}</div>
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white border border-white/10">{user.name?.charAt(0)?.toUpperCase()}</div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate text-white">{user.name}</p>
-              <p className="text-[10px] text-blue-300/40 capitalize">{user.role}{schoolCode ? ` · ${schoolCode}` : ''}</p>
+              <p className="text-[10px] text-white/40 capitalize">{user.role}{schoolCode ? ` · ${schoolCode}` : ''}</p>
             </div>
           </div>
         </div>
@@ -149,10 +146,6 @@ export default function Layout({ user, onLogout, children }: { user: User; onLog
             ))}
           </div>
           <div className="flex-1" />
-
-          <button onClick={toggleDark} className="p-2 rounded-xl hover:bg-surface text-muted" aria-label="Toggle dark mode">
-            {darkMode ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
 
           <div className="relative">
             <button onClick={() => { setShowNotif(!showNotif); setShowProfile(false); }} className="p-2 rounded-xl hover:bg-surface text-muted relative" aria-label="Notifications">

@@ -105,14 +105,14 @@ export default function Dashboard({ user }: { user: User }) {
                 ); })}
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+          <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
             <h3 className="font-semibold font-heading text-sm mb-4">Users by Role</h3>
             <div className="grid grid-cols-2 gap-3">
-              {[{ role: 'Admin', count: s.usersByRole?.admin || 0, color: 'from-blue-500 to-blue-600' },
-                { role: 'Reviewer', count: s.usersByRole?.reviewer || 0, color: 'from-indigo-500 to-indigo-600' },
-                { role: 'Functionary', count: s.usersByRole?.functionary || 0, color: 'from-emerald-500 to-emerald-600' },
-                { role: 'Teacher', count: s.usersByRole?.teacher || 0, color: 'from-amber-500 to-amber-600' }]
-                .map(r => <div key={r.role} className={`bg-gradient-to-br ${r.color} text-white rounded-xl p-4 text-center`}><p className="text-2xl font-bold">{r.count}</p><p className="text-xs opacity-80">{r.role}s</p></div>)}
+              {[{ role: 'Admin', count: s.usersByRole?.admin || 0, color: 'from-accent-blue/80 to-accent-blue', plural: 'Admins' },
+                { role: 'Reviewer', count: s.usersByRole?.reviewer || 0, color: 'from-accent-purple/80 to-accent-purple', plural: 'Reviewers' },
+                { role: 'Functionary', count: s.usersByRole?.functionary || 0, color: 'from-success/80 to-success', plural: 'Functionaries' },
+                { role: 'Teacher', count: s.usersByRole?.teacher || 0, color: 'from-accent-orange/80 to-accent-orange', plural: 'Teachers' }]
+                .map(r => <div key={r.role} className={`bg-gradient-to-br ${r.color} text-white rounded-xl p-4 text-center shadow-md`}><p className="text-2xl font-bold">{r.count}</p><p className="text-xs opacity-80">{r.plural}</p></div>)}
             </div>
           </div>
         </motion.div>

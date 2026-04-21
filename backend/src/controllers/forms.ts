@@ -58,12 +58,31 @@ export const getFormByLink = async (req: Request, res: Response) => {
 
 export const createForm = async (req: AuthRequest, res: Response) => {
   try {
+    const data = { ...req.body };
+    if (typeof data.settings === 'string') {
+      try { data.settings = JSON.parse(data.settings); } catch {}
+    }
+    if (typeof data.schema === 'string') {
+      try { data.form_schema = JSON.parse(data.schema); } catch {}
+    } else if (typeof data.fields === 'string') {
+      // Backwards compatibility if old payload hits
+      try { data.form_schema = { sections: [{ id: 's1', title: 'Default', fields: JSON.parse(data.fields) }] }; } catch {}
+    } else if (data.schema) {
+      data.form_schema = data.schema;
+    }
+    if (data.form_type) { data.formType = data.form_type; delete data.form_type; }
+    if (data.expires_at) { data.expiresAt = data.expires_at; delete data.expires_at; }
+    if (data.slug) {
+      data.shareableLink = data.slug;
+    } else {
+      data.shareableLink = Math.random().toString(36).substring(2, 10);
+    }
+    
     const form = await Form.create({
-      ...req.body,
+      ...data,
       adminId: req.user._id,
-      shareableLink: Math.random().toString(36).substring(2, 10)
     });
-    res.status(201).json({ success: true, data: form });
+    res.status(201).json({ success: true, data: { ...form.toObject(), schema: form.form_schema, id: form._id, form_type: form.formType, slug: form.shareableLink } });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -71,10 +90,38 @@ export const createForm = async (req: AuthRequest, res: Response) => {
 
 export const updateForm = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const form = await Form.findByIdAndUpdate(id, req.body, { new: true });
+    const id = req.params.id || req.body.id;
+    if (!id) return res.status(400).json({ error: 'Form ID required' });
+    
+    const updates = { ...req.body };
+    delete updates.id;
+    if (typeof updates.settings === 'string') {
+      try { updates.settings = JSON.parse(updates.settings); } catch {}
+    }
+    if (typeof updates.schema === 'string') {
+      try { updates.form_schema = JSON.parse(updates.schema); } catch {}
+    } else if (updates.schema) {
+      updates.form_schema = updates.schema;
+    }
+    if (updates.form_type) { updates.formType = updates.form_type; delete updates.form_type; }
+    if (updates.expires_at) { updates.expiresAt = updates.expires_at; delete updates.expires_at; }
+    if (updates.slug) { updates.shareableLink = updates.slug; }
+    
+    const form = await Form.findByIdAndUpdate(id, updates, { new: true });
     if (!form) return res.status(404).json({ error: 'Form not found' });
-    res.status(200).json({ success: true, data: form });
+    res.status(200).json({ success: true, data: { ...form.toObject(), schema: form.form_schema } });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteForm = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'Form ID required' });
+    const form = await Form.findByIdAndDelete(id);
+    if (!form) return res.status(404).json({ error: 'Form not found' });
+    res.status(200).json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

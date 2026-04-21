@@ -2,13 +2,12 @@ import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
 const colors: Record<string, { bg: string; icon: string }> = {
-  purple: { bg: 'bg-indigo-50 dark:bg-indigo-900/20', icon: 'text-indigo-600 dark:text-indigo-400' },
-  blue: { bg: 'bg-blue-50 dark:bg-blue-900/20', icon: 'text-blue-600 dark:text-blue-400' },
-  green: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: 'text-emerald-600 dark:text-emerald-400' },
-  amber: { bg: 'bg-amber-50 dark:bg-amber-900/20', icon: 'text-amber-600 dark:text-amber-400' },
-  rose: { bg: 'bg-rose-50 dark:bg-rose-900/20', icon: 'text-rose-600 dark:text-rose-400' },
-  sky: { bg: 'bg-sky-50 dark:bg-sky-900/20', icon: 'text-sky-600 dark:text-sky-400' },
-  red: { bg: 'bg-red-50 dark:bg-red-900/20', icon: 'text-red-600 dark:text-red-400' },
+  purple: { bg: 'bg-accent-purple shadow-lg shadow-accent-purple/30', icon: 'text-white' },
+  blue: { bg: 'bg-accent-blue shadow-lg shadow-accent-blue/30', icon: 'text-white' },
+  red: { bg: 'bg-accent-red shadow-lg shadow-accent-red/30', icon: 'text-white' },
+  amber: { bg: 'bg-accent-orange shadow-lg shadow-accent-orange/30', icon: 'text-white' },
+  rose: { bg: 'bg-accent-red shadow-lg shadow-accent-red/30', icon: 'text-white' },
+  green: { bg: 'bg-success shadow-lg shadow-success/30', icon: 'text-white' },
 };
 
 export default function StatCard({ label, value, icon: Icon, trend, trendUp, color = 'purple', subtitle }: {

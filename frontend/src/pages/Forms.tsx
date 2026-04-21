@@ -16,11 +16,11 @@ import {
 const typeIcons: Record<string, any> = { normal: FileText, nomination: Award, branching: GitBranch, quiz: HelpCircle, multi: Layers };
 const typeLabels: Record<string, string> = { normal: 'Normal Form', nomination: 'Nomination', branching: 'Branching', quiz: 'Quiz', multi: 'Multi-Form' };
 const typeColors: Record<string, { bg: string; text: string; border: string }> = {
-  normal: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800' },
-  nomination: { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-200 dark:border-teal-800' },
-  branching: { bg: 'bg-sky-50 dark:bg-sky-900/20', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-200 dark:border-sky-800' },
-  quiz: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800' },
-  multi: { bg: 'bg-pink-50 dark:bg-pink-900/20', text: 'text-pink-600 dark:text-pink-400', border: 'border-pink-200 dark:border-pink-800' },
+  normal: { bg: 'bg-accent-blue/10 dark:bg-accent-blue/20', text: 'text-accent-blue', border: 'border-accent-blue/30' },
+  nomination: { bg: 'bg-success/10 dark:bg-success/20', text: 'text-success', border: 'border-success/30' },
+  branching: { bg: 'bg-accent-purple/10 dark:bg-accent-purple/20', text: 'text-accent-purple', border: 'border-accent-purple/30' },
+  quiz: { bg: 'bg-accent-orange/10 dark:bg-accent-orange/20', text: 'text-accent-orange', border: 'border-accent-orange/30' },
+  multi: { bg: 'bg-accent-red/10 dark:bg-accent-red/20', text: 'text-accent-red', border: 'border-accent-red/30' },
 };
 
 export default function Forms({ user }: { user: User }) {
@@ -78,21 +78,16 @@ export default function Forms({ user }: { user: User }) {
 
   // CRUD
   const openCreateModal = (type?: string) => {
-    setEditForm(null);
-    setForm({ title: '', description: '', form_type: type || 'normal', status: 'draft', expires_at: '', settings: {} });
-    setShowCreate(true);
+    navigate(`/forms/new?type=${type || 'normal'}`);
   };
 
   const openEditModal = (row: any) => {
-    setEditForm(row);
-    let s: any = {};
-    try { s = typeof row.settings === 'string' ? JSON.parse(row.settings) : (row.settings || {}); } catch {}
-    setForm({ title: row.title, description: row.description || '', form_type: row.form_type, status: row.status, expires_at: row.expires_at || '', settings: s });
-    setShowCreate(true);
-    setOpenMenu(null);
+    // Both edit and field builder now go to the same unified builder page
+    navigate(`/forms/${row.id}/builder`);
   };
 
   const handleSave = async () => {
+    // Legacy modal save fallback (should be unused now)
     if (!form.title.trim()) return alert('Form title is required');
     try {
       const payload = { ...form, settings: JSON.stringify(form.settings), created_by: user.id };
@@ -103,12 +98,7 @@ export default function Forms({ user }: { user: User }) {
   };
 
   const openBuilder = (row: any) => {
-    setActiveForm(row);
-    let f: FormField[] = [];
-    try { f = typeof row.fields === 'string' ? JSON.parse(row.fields) : (row.fields || []); } catch {}
-    setBuilderFields(f);
-    setShowFieldBuilder(true);
-    setOpenMenu(null);
+    navigate(`/forms/${row.id}/builder`);
   };
 
   const saveFields = async () => {
@@ -159,7 +149,7 @@ export default function Forms({ user }: { user: User }) {
           <p className="text-sm text-slate-500 dark:text-slate-400">{isAdmin ? 'Create, configure fields, set branching & quiz logic' : 'Select a form to fill'}</p>
         </div>
         {isAdmin && (
-          <button onClick={() => openCreateModal()} className="inline-flex items-center gap-2 px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-light shadow-sm min-h-[44px]">
+          <button onClick={() => openCreateModal()} className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover shadow-sm min-h-[44px]">
             <Plus size={16} /> Create Form
           </button>
         )}
@@ -232,12 +222,12 @@ export default function Forms({ user }: { user: User }) {
                 className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group">
 
                 {/* Color bar top */}
-                <div className={`h-1.5 ${c.bg.replace('bg-', 'bg-').replace('/20', '').replace('/50', '')} ${
-                  row.form_type === 'normal' ? 'bg-blue-400' :
-                  row.form_type === 'nomination' ? 'bg-indigo-400' :
-                  row.form_type === 'branching' ? 'bg-sky-400' :
-                  row.form_type === 'quiz' ? 'bg-amber-400' :
-                  'bg-pink-400'
+                <div className={`h-1.5 ${
+                  row.form_type === 'normal' ? 'bg-accent-blue' :
+                  row.form_type === 'nomination' ? 'bg-success' :
+                  row.form_type === 'branching' ? 'bg-accent-purple' :
+                  row.form_type === 'quiz' ? 'bg-accent-orange' :
+                  'bg-accent-red'
                 }`} />
 
                 <div className="p-5 flex-1 flex flex-col">
@@ -428,7 +418,7 @@ export default function Forms({ user }: { user: User }) {
         </div>
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
           <button onClick={() => setShowCreate(false)} className="px-5 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900 font-medium">Cancel</button>
-          <button onClick={handleSave} className="px-6 py-2.5 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light shadow-sm">
+          <button onClick={handleSave} className="px-6 py-2.5 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover shadow-sm">
             {editForm ? 'Save Settings' : 'Create Form'}
           </button>
         </div>
@@ -454,7 +444,7 @@ export default function Forms({ user }: { user: User }) {
           <button onClick={() => setShowPreview(true)} className="px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900 font-medium flex items-center gap-2"><Eye size={14} /> Preview</button>
           <div className="flex gap-3">
             <button onClick={() => setShowFieldBuilder(false)} className="px-5 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900 font-medium">Cancel</button>
-            <button onClick={saveFields} className="px-6 py-2.5 bg-navy text-white text-sm rounded-xl font-semibold hover:bg-navy-light shadow-sm">Save Fields</button>
+            <button onClick={saveFields} className="px-6 py-2.5 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover shadow-sm">Save Fields</button>
           </div>
         </div>
       </Modal>

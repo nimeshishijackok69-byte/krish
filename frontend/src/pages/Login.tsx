@@ -48,10 +48,10 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/60 to-sky-50/40 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-[420px]">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sidebar to-primary text-white flex items-center justify-center mx-auto mb-4 shadow-xl shadow-sidebar/25">
+          <div className="w-16 h-16 rounded-2xl bg-sidebar text-white flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary/25">
             <GraduationCap size={30} />
           </div>
-          <h1 className="text-2xl font-bold font-heading text-sidebar">SchoolData Portal</h1>
+          <h1 className="text-2xl font-bold font-heading text-primary">SchoolData Collection Portal</h1>
           <p className="text-sm text-muted mt-1">Secure School Data Collection System</p>
         </div>
 
@@ -60,9 +60,9 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             <div className="p-6 space-y-3">
               <h2 className="text-lg font-bold text-center mb-5 font-heading text-fg">Choose Your Portal</h2>
               {[
-                { id: 'admin' as Portal, label: 'Admin / Reviewer', desc: 'Username & password login', icon: Key, iconBg: 'bg-sidebar/10', iconColor: 'text-sidebar' },
-                { id: 'functionary' as Portal, label: 'School Functionary', desc: 'Email OTP (head.{code}@cbss.school.org)', icon: Mail, iconBg: 'bg-accent-green/10', iconColor: 'text-accent-green' },
-                { id: 'teacher' as Portal, label: 'Teacher', desc: 'OTP or direct form link access', icon: Phone, iconBg: 'bg-primary/10', iconColor: 'text-primary' },
+                { id: 'admin' as Portal, label: 'Admin / Reviewer', desc: 'Username & password login', icon: Key, iconBg: 'bg-primary/10', iconColor: 'text-primary' },
+                { id: 'functionary' as Portal, label: 'School Functionary', desc: 'Email OTP Verification', icon: Mail, iconBg: 'bg-primary/10', iconColor: 'text-primary' },
+                { id: 'teacher' as Portal, label: 'Teacher', desc: 'Direct form OTP access', icon: Phone, iconBg: 'bg-primary/10', iconColor: 'text-primary' },
               ].map(p => (
                 <button key={p.id} onClick={() => { reset(); setPortal(p.id); }}
                   className="w-full p-4 rounded-xl border-2 border-slate-100 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all flex items-center gap-4 group text-left">
