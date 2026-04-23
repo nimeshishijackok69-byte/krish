@@ -38,7 +38,7 @@ const submissionSchema = new mongoose.Schema({
   },
   averageMarks: Number,
   finalGrade: String,
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'submitted', 'under_review', 'approved', 'rejected'], default: 'pending' },
   metadata: {
     ip: String,
     userAgent: String

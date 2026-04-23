@@ -21,10 +21,12 @@
   --color-accent-red: #ef4444;
   --color-accent-orange: #f59e0b;
   --color-success: #10b981;
+  --color-accent-green: #22c55e; /* Vibrant Green 500 */
+  --color-accent-green-hover: #16a34a; /* Green 600 */
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
 
-  /* ── App 1 Design Token Mirror ── */
+  /* ── App 1 RAJU Token Mirror ── */
   --color-ink: #0b1d3a;
   --color-ink-soft: #1b2e52;
   --color-navy: #102a5c;

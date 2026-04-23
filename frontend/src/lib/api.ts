@@ -1,17 +1,33 @@
-const API_BASE = 'http://localhost:5000/api/v1';
+const API_BASE = 'http://localhost:5001/api/v1';
 
 async function request(url: string, options?: RequestInit) {
   const token = localStorage.getItem('auth_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token && token !== 'undefined' && token !== 'null') headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}${url}`, { 
     ...options, 
     credentials: 'include',
     headers: { ...headers, ...options?.headers } 
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || `Request failed (${res.status})`);
+    let errMessage = `Request failed (${res.status})`;
+    try {
+      const err = await res.json();
+      errMessage = err.error || err.message || errMessage;
+    } catch (e) {
+      // If not JSON, use the status text
+      errMessage = res.statusText || errMessage;
+    }
+    console.error(`API Error [${res.status}] ${url}:`, errMessage);
+    
+    // Auto-logout if user no longer exists or token is invalid
+    if (res.status === 401 && (errMessage === 'User no longer exists' || errMessage === 'Invalid token')) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      window.location.href = '/login';
+    }
+    
+    throw new Error(errMessage);
   }
   return res.json();
 }

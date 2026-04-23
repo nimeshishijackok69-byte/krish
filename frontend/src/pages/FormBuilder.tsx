@@ -369,13 +369,37 @@ export default function FormBuilder() {
                 </select></label>
             </div>
 
+            <div className="mt-3">
+              <label className="text-xs block"><span className="text-muted">Access Mode</span>
+                <select className="select mt-1" value={(form.settings.auth_mode as string) || 'login'} onChange={e => patchSettings({ auth_mode: e.target.value })}>
+                  <option value="login">Login Required</option>
+                  <option value="otp">OTP based (Email)</option>
+                  <option value="anonymous">No Login (Anonymous)</option>
+                </select></label>
+            </div>
+
             {(form.form_type === 'quiz' || form.form_type === 'multi') && (
               <div className="mt-3 pt-3 border-t border-border space-y-2">
-                <div className="text-xs font-semibold text-ink">Quiz</div>
+                <div className="text-xs font-semibold text-ink">Quiz Settings</div>
                 <label className="text-xs"><span className="text-muted">Time limit (minutes)</span>
                   <input type="number" className="input !py-1.5 mt-1" value={(form.settings.time_limit_min as number) || 30} onChange={e => patchSettings({ time_limit_min: +e.target.value })} /></label>
                 <div className="flex items-center justify-between"><span className="text-sm">Negative marking</span><Toggle checked={!!form.settings.negative_marking} onChange={v => patchSettings({ negative_marking: v })} /></div>
                 <div className="flex items-center justify-between"><span className="text-sm">Shuffle options</span><Toggle checked={!!form.settings.shuffle} onChange={v => patchSettings({ shuffle: v })} /></div>
+              </div>
+            )}
+
+            {(form.form_type === 'nomination' || form.form_type === 'multi') && (
+              <div className="mt-3 pt-3 border-t border-border space-y-2">
+                <div className="text-xs font-semibold text-ink">Nomination Settings</div>
+                <label className="text-xs"><span className="text-muted">Nomination limit (per school)</span>
+                  <input type="number" className="input !py-1.5 mt-1" value={(form.settings.nomination_limit as number) || 5} onChange={e => patchSettings({ nomination_limit: +e.target.value })} /></label>
+                <label className="text-xs block"><span className="text-muted">Teacher Login Type</span>
+                  <select className="select mt-1" value={(form.settings.teacher_login as string) || 'otp'} onChange={e => patchSettings({ teacher_login: e.target.value })}>
+                    <option value="otp">OTP via Link</option>
+                    <option value="direct">Direct Access (Link only)</option>
+                  </select></label>
+                <div className="flex items-center justify-between"><span className="text-sm">Require Teacher Email</span><Toggle checked={form.settings.require_email !== false} onChange={v => patchSettings({ require_email: v })} /></div>
+                <div className="flex items-center justify-between"><span className="text-sm">Require Teacher Phone</span><Toggle checked={!!form.settings.require_phone} onChange={v => patchSettings({ require_phone: v })} /></div>
               </div>
             )}
           </Card>

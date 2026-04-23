@@ -52,7 +52,21 @@ export default function Submissions({ user }: { user: User }) {
   };
 
   let responses: Record<string, any> = {};
-  if (selected?.responses) { try { responses = typeof selected.responses === 'string' ? JSON.parse(selected.responses) : selected.responses; } catch { responses = {}; } }
+  if (selected?.responses) { 
+    try { 
+      const respSource = selected.responses;
+      const parsed = typeof respSource === 'string' ? JSON.parse(respSource) : respSource;
+      if (Array.isArray(parsed)) {
+        parsed.forEach((r: any) => {
+          if (r.fieldId) responses[r.fieldId] = r.value;
+        });
+      } else {
+        responses = parsed || {};
+      }
+    } catch { 
+      responses = {}; 
+    } 
+  }
 
   const columns = [
     { key: 'id', label: '#', sortable: true, render: (v: number) => <span className="text-xs font-mono text-muted">#{v}</span> },

@@ -17,10 +17,25 @@ export default function FormView({ user }: { user: User }) {
 
   useEffect(() => {
     if (!submissionId) { setLoading(false); return; }
-    api.get(`/submissions?id=${submissionId}`).then(async (sub) => {
-      setSubmission(sub);
-      const f = await api.get(`/forms?id=${sub.form_id}`);
-      setForm(f);
+    // Fetch submission by ID using the correct path parameter endpoint
+    api.get(`/submissions/${submissionId}`).then(async (res) => {
+      const sub = res.data || res;
+      
+      // Map backend fields to frontend expected fields if needed
+      const normalizedSub = {
+        ...sub,
+        id: sub._id || sub.id,
+        form_id: sub.formId?._id || sub.formId || sub.form_id,
+        user_name: sub.userName || sub.user_name,
+        submitted_at: sub.createdAt || sub.submitted_at
+      };
+      setSubmission(normalizedSub);
+
+      const formId = normalizedSub.form_id;
+      if (formId) {
+        const f = await api.get(`/forms?id=${formId}`);
+        setForm(f);
+      }
     }).catch(console.error).finally(() => setLoading(false));
   }, [submissionId]);
 
@@ -28,11 +43,44 @@ export default function FormView({ user }: { user: User }) {
   if (!submission || !form) return <div className="text-center py-16 text-slate-500 dark:text-slate-400">Submission not found</div>;
 
   let fields: FormField[] = [];
-  try { fields = typeof form.fields === 'string' ? JSON.parse(form.fields) : (form.fields || []); } catch {}
+  try { 
+    const schemaSource = form.form_schema || form.schema;
+    if (schemaSource) {
+      const parsed = typeof schemaSource === 'string' ? JSON.parse(schemaSource) : schemaSource;
+      if (parsed.sections) {
+        // Map backend sections to FormRenderer sections
+        fields = parsed.sections.map((s: any) => ({
+          id: s.id,
+          type: 'section',
+          label: s.title,
+          children: s.fields || [],
+          visibleIf: s.visibleIf,
+          section_type: form.form_type || form.formType || 'normal'
+        }));
+      }
+    }
+    
+    if (fields.length === 0) {
+      fields = typeof form.fields === 'string' ? JSON.parse(form.fields) : (form.fields || []);
+    }
+  } catch {}
   let settings: any = {};
   try { settings = typeof form.settings === 'string' ? JSON.parse(form.settings) : (form.settings || {}); } catch {}
+  if (settings.time_limit_min && !settings.time_limit) settings.time_limit = settings.time_limit_min;
+  
+  // Normalize responses: backend array [{fieldId, value}] -> frontend record {fieldId: value}
   let responses: Record<string, any> = {};
-  try { responses = typeof submission.responses === 'string' ? JSON.parse(submission.responses) : (submission.responses || {}); } catch {}
+  try { 
+    const respSource = submission.responses;
+    const parsed = typeof respSource === 'string' ? JSON.parse(respSource) : respSource;
+    if (Array.isArray(parsed)) {
+      parsed.forEach((r: any) => {
+        if (r.fieldId) responses[r.fieldId] = r.value;
+      });
+    } else {
+      responses = parsed || {};
+    }
+  } catch {}
 
   // Visibility rules:
   // user: sees questions + own answers only. NO correct answers, NO marks, NO score.
@@ -63,7 +111,7 @@ export default function FormView({ user }: { user: User }) {
         <div className="p-6">
           <FormRenderer
             fields={fields}
-            formType={form.form_type}
+            formType={form.form_type || form.formType || 'normal'}
             settings={settings}
             initialValues={responses}
             onSubmit={() => {}}

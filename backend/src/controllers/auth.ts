@@ -3,26 +3,55 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { AuditLog } from '../models/AuditLog.js';
 
-const generateTokens = (userId: string) => {
-  const accessToken = jwt.sign({ id: userId }, process.env.JWT_ACCESS_SECRET!, { expiresIn: '1h' });
-  const refreshToken = jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET!, { expiresIn: '7d' });
+const extractSchoolCode = (email?: string) => {
+  const match = String(email || '').trim().toLowerCase().match(/^head\.([a-z0-9]+)@cbss\.school\.org$/i);
+  return match?.[1]?.toUpperCase();
+};
+
+const generateTokens = (user: any) => {
+  const payload = { 
+    id: user._id, 
+    role: user.role, 
+    schoolCode: user.profile?.schoolCode || extractSchoolCode(user.email)
+  };
+  const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_SECRET!, { expiresIn: '1h' });
+  const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET!, { expiresIn: '7d' });
   return { accessToken, refreshToken };
 };
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    console.log(`Login attempt for: ${normalizedEmail}`);
+    const user = await User.findOne({ email: normalizedEmail });
     
-    if (!user || !(await (user as any).comparePassword(password))) {
+    if (!user) {
+      console.log(`User not found: ${normalizedEmail}`);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.role === 'functionary') {
+      return res.status(403).json({ error: 'Functionaries must use OTP login' });
+    }
+
+    const isMatch = await (user as any).comparePassword(password);
+    console.log(`Password match for ${normalizedEmail}: ${isMatch}`);
+
+    if (!isMatch) {
       await AuditLog.create({
         action: 'login_failed',
-        metadata: { email, ip: req.ip }
+        metadata: { email: normalizedEmail, ip: req.ip }
       });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const { accessToken, refreshToken } = generateTokens(user._id.toString());
+    const { accessToken, refreshToken } = generateTokens(user);
     
     await AuditLog.create({
       userId: user._id,
@@ -45,7 +74,7 @@ export const login = async (req: Request, res: Response) => {
         name: user.profile.fullName,
         email: user.email,
         role: user.role,
-        school_code: user.profile.schoolCode
+        school_code: user.profile.schoolCode || extractSchoolCode(user.email)
       }
     });
   } catch (err: any) {
@@ -68,7 +97,7 @@ export const verifySession = async (req: Request, res: Response) => {
         name: user.profile.fullName,
         email: user.email,
         role: user.role,
-        school_code: user.profile.schoolCode
+        school_code: user.profile.schoolCode || extractSchoolCode(user.email)
       }
     });
   } catch (err) {
@@ -91,7 +120,13 @@ export const requestOTP = async (req: Request, res: Response) => {
       metadata: { method: email ? 'email' : 'phone', ip: req.ip }
     });
 
-    res.status(200).json({ success: true, message: 'OTP sent successfully (Use 123456)' });
+    const schoolCode = user.profile?.schoolCode || extractSchoolCode(user.email);
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'OTP sent successfully (Use 123456)',
+      school_code: schoolCode
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -105,7 +140,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
     const user = await User.findOne(email ? { email } : { 'profile.phone': phone });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const { accessToken, refreshToken } = generateTokens(user._id.toString());
+    const { accessToken, refreshToken } = generateTokens(user);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -122,7 +157,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
         name: user.profile.fullName,
         email: user.email,
         role: user.role,
-        school_code: user.profile.schoolCode
+        school_code: user.profile.schoolCode || extractSchoolCode(user.email)
       }
     });
   } catch (err: any) {

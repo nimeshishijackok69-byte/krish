@@ -1,14 +1,14 @@
 import express from 'express';
 import { submitForm, getSubmissions, getSubmissionById, updateSubmission } from '../controllers/submissions.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, optionalAuthenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { submissionSchema } from '../utils/schemas.js';
 
 const router = express.Router();
 
-router.post('/', authenticate, validate(submissionSchema), submitForm);
-router.put('/', authenticate, updateSubmission);
+router.post('/', optionalAuthenticate, validate(submissionSchema), submitForm);
+router.put('/', optionalAuthenticate, updateSubmission);
 router.get('/', authenticate, getSubmissions);
-router.get('/:id', authenticate, getSubmissionById);
+router.get('/:id', optionalAuthenticate, getSubmissionById);
 
 export default router;

@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 
+import { User } from '../lib/auth';
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type FieldType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'dropdown' | 'radio' | 'checkbox' | 'file' | 'mcq';
 
@@ -22,7 +24,7 @@ type Section = {
 };
 
 type FormData = {
-  id: string; title: string; description: string; form_type: string;
+  id: string; _id?: string; title: string; description: string; form_type: string;
   form_schema?: { sections: Section[] };
   schema?: { sections: Section[] };
   settings: Record<string, unknown>;
@@ -49,7 +51,7 @@ function Badge({ tone = 'blue', children }: { tone?: 'blue' | 'green' | 'amber' 
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function FormFill() {
+export default function FormFill({ user }: { user: User }) {
   const { id } = useParams();
   const nav = useNavigate();
 
@@ -66,6 +68,13 @@ export default function FormFill() {
   const [receipt, setReceipt] = useState<{ id: string; score?: number | null; max?: number | null } | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
+  // OTP states
+  const [otpSent, setOtpSent] = useState(false);
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+
   // Online/offline events
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false);
@@ -76,15 +85,31 @@ export default function FormFill() {
   // Load form
   useEffect(() => {
     if (!id) { setStep('error'); setError('No form specified'); return; }
+    
+    // School Functionaries should not be filling forms, they should be nominating
+    if (user.role === 'functionary') {
+      setStep('error');
+      setError('School Functionaries cannot fill out forms. Please use the "Nominate Teachers" button on the Forms page.');
+      return;
+    }
+
     Promise.all([
       api.get(`/forms?id=${id}`),
       api.get(`/submissions?form_id=${id}`)
     ]).then(([res, subs]: any[]) => {
       if (!res || res.error) { setStep('error'); setError('Form not found'); return; }
 
-      // Normalize schema: form_schema → schema
-      if (res.form_schema && !res.schema) res.schema = res.form_schema;
-      if (!res.schema && res.fields) {
+      // Normalize schema: form_schema/schema/fields
+      const schemaSource = res.form_schema || res.schema;
+      if (schemaSource) {
+        try {
+          res.schema = typeof schemaSource === 'string' ? JSON.parse(schemaSource) : schemaSource;
+        } catch (e) {
+          console.error("Failed to parse schema", e);
+        }
+      }
+
+      if ((!res.schema || !res.schema.sections) && res.fields) {
         try {
           const fields = typeof res.fields === 'string' ? JSON.parse(res.fields) : res.fields;
           res.schema = { sections: [{ id: 's1', title: 'Questions', fields }] };
@@ -97,17 +122,37 @@ export default function FormFill() {
 
       setForm(res);
 
+      // Check auth mode
+      const authMode = res.settings.auth_mode || 'login';
+      const isAnon = user.id === 'anon';
+
+      if (authMode === 'login' && isAnon) {
+        setStep('error');
+        setError('Login required to fill this form.');
+        return;
+      }
+
       // Check status
       if (res.status !== 'active') { setStep('error'); setError('This form is not active.'); return; }
       if (res.expires_at && new Date(res.expires_at) < new Date()) { setStep('error'); setError('This form has closed.'); return; }
+
+      // If OTP mode and not verified yet, wait for OTP
+      if (authMode === 'otp' && isAnon && !otpVerified) {
+        setStep('filling'); // We stay in filling step but render OTP UI
+        return;
+      }
 
       // Check existing submission
       const existing = (subs || []).find((s: any) => !s.is_draft && !s.isDraft);
       const draft = (subs || []).find((s: any) => s.is_draft || s.isDraft);
 
       if (existing) {
-        const score = existing.score?.earnedPoints ?? existing.score ?? null;
-        const max = existing.score?.totalPoints ?? null;
+        const score = typeof existing.score === 'object' && existing.score !== null
+          ? existing.score.earnedPoints
+          : existing.score ?? null;
+        const max = typeof existing.score === 'object' && existing.score !== null
+          ? existing.score.totalPoints
+          : null;
         setReceipt({ id: existing._id || existing.id, score, max });
         setStep('submitted');
       } else {
@@ -163,6 +208,27 @@ export default function FormFill() {
     return true;
   };
 
+  const handleSendOtp = async () => {
+    if (!email || !email.includes('@')) { setError('Please enter a valid email.'); return; }
+    setOtpLoading(true);
+    setError('');
+    // Simulate API call
+    setTimeout(() => {
+      setOtpSent(true);
+      setOtpLoading(false);
+      alert('SIMULATION: OTP sent to ' + email + '. Use 123456 to verify.');
+    }, 1000);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp === '123456') {
+      setOtpVerified(true);
+      setError('');
+    } else {
+      setError('Invalid OTP. Use 123456 for simulation.');
+    }
+  };
+
   const currentSection = visibleSections[sectionIdx];
   const progress = visibleSections.length ? ((sectionIdx + 1) / visibleSections.length) * 100 : 0;
 
@@ -185,7 +251,11 @@ export default function FormFill() {
     if (!form || !online) return;
     setSaving(true);
     try {
-      const payload = { form_id: form.id, responses: answers, status: 'draft', is_draft: true };
+      const payload = { 
+      form_id: form._id || form.id, responses: answers, status: 'draft', is_draft: true,
+      user_email: user.id === 'anon' ? email : user.email,
+      user_name: user.id === 'anon' ? (email.split('@')[0]) : user.name
+    };
       if (submissionId) {
         await api.put('/submissions', { id: submissionId, ...payload });
       } else {
@@ -214,9 +284,11 @@ export default function FormFill() {
     setError('');
     const sc = computeScore();
     const payload = {
-      form_id: form.id, responses: answers,
+      form_id: form._id || form.id, responses: answers,
       status: 'submitted', is_draft: false,
-      score: sc?.score ?? null
+      score: sc?.score ?? null,
+      user_email: user.id === 'anon' ? email : user.email,
+      user_name: user.id === 'anon' ? (email.split('@')[0]) : user.name
     };
     try {
       let saved: any;
@@ -273,12 +345,70 @@ export default function FormFill() {
 
   if (!form || !currentSection) return null;
 
+  const authMode = form.settings.auth_mode || 'login';
+  const isAnon = user.id === 'anon';
+
+  // Render OTP verification screen if required
+  if (authMode === 'otp' && isAnon && !otpVerified) {
+    return (
+      <div className="min-h-screen bg-canvas grid place-items-center p-6">
+        <div className="card max-w-md w-full p-8">
+          <div className="w-16 h-16 rounded-full bg-blue-soft text-blue grid place-items-center mx-auto mb-4">
+            <GraduationCap size={34}/>
+          </div>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-ink">Verification Required</h2>
+            <p className="text-sm text-muted mt-1">Please verify your email to access this form.</p>
+          </div>
+
+          <div className="space-y-4">
+            {!otpSent ? (
+              <>
+                <label className="block">
+                  <span className="text-xs font-semibold text-muted mb-1 block">School Email</span>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                    className="input" placeholder="teacher@school.edu" />
+                </label>
+                <button onClick={handleSendOtp} disabled={otpLoading}
+                  className="btn btn-primary w-full flex items-center justify-center gap-2">
+                  {otpLoading ? <Loader2 className="animate-spin" size={18}/> : <Send size={18}/>}
+                  Send Verification Code
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 mb-4">
+                  Code sent to <strong>{email}</strong>. Check your inbox.
+                </div>
+                <label className="block">
+                  <span className="text-xs font-semibold text-muted mb-1 block">Verification Code</span>
+                  <input type="text" value={otp} onChange={e => setOtp(e.target.value)}
+                    className="input text-center text-xl tracking-widest font-bold" placeholder="••••••" maxLength={6} />
+                </label>
+                {error && <p className="text-xs text-rose-500 font-medium">{error}</p>}
+                <button onClick={handleVerifyOtp} className="btn btn-primary w-full">
+                  Verify & Access Form
+                </button>
+                <button onClick={() => setOtpSent(false)} className="btn btn-ghost w-full text-xs">
+                  Change email address
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-canvas">
       {/* Header */}
       <header className="bg-white border-b border-border sticky top-0 z-20">
         <div className="max-w-3xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
+            <button onClick={() => nav('/forms')} className="p-2 hover:bg-slate-100 rounded-lg text-muted hover:text-ink transition-colors" title="Back to Forms">
+              <ChevronLeft size={20}/>
+            </button>
             <div className="w-9 h-9 rounded-xl bg-navy text-white grid place-items-center"><GraduationCap size={18}/></div>
             <div>
               <div className="font-display font-bold text-sm text-ink">{form.title}</div>
@@ -335,8 +465,19 @@ export default function FormFill() {
         )}
 
         <div className="flex items-center justify-between flex-wrap gap-2 pt-2">
-          <button onClick={() => setSectionIdx(Math.max(0, sectionIdx - 1))} disabled={sectionIdx === 0} className="btn btn-ghost disabled:opacity-50">
-            <ChevronLeft size={16}/> Previous
+          <button 
+            onClick={() => {
+              if (sectionIdx === 0) {
+                if (confirm('Are you sure you want to exit? Any unsaved changes might be lost.')) {
+                  nav('/forms');
+                }
+              } else {
+                setSectionIdx(sectionIdx - 1);
+              }
+            }} 
+            className="btn btn-ghost"
+          >
+            <ChevronLeft size={16}/> {sectionIdx === 0 ? 'Back to Forms' : 'Previous'}
           </button>
           <div className="flex gap-2">
             <button onClick={saveDraft} className="btn btn-ghost"><Save size={16}/> Save draft</button>

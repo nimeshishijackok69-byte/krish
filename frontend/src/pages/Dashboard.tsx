@@ -81,7 +81,12 @@ export default function Dashboard({ user }: { user: User }) {
                 <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <div><p className="text-xs font-medium capitalize">{log.action?.replace(/_/g, ' ')}</p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400">{log.created_at ? new Date(log.created_at).toLocaleString() : ''}</p>
-                  {log.details && (() => { try { const d = JSON.parse(log.details); return d.ip ? <p className="text-[9px] text-slate-500 dark:text-slate-400/60">IP: {d.ip}</p> : null; } catch { return null; } })()}
+                  {log.details && (() => { 
+                    try { 
+                      const d = typeof log.details === 'string' ? JSON.parse(log.details) : log.details; 
+                      return d.ip ? <p className="text-[9px] text-slate-500 dark:text-slate-400/60">IP: {d.ip}</p> : null; 
+                    } catch { return null; } 
+                  })()}
                 </div>
               </div>
             ))}

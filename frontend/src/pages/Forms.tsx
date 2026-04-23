@@ -68,6 +68,17 @@ export default function Forms({ user }: { user: User }) {
   // Helpers
   const getFieldCount = (f: any) => {
     try {
+      const schema = f.form_schema || f.schema;
+      if (schema) {
+        const parsed = typeof schema === 'string' ? JSON.parse(schema) : schema;
+        if (parsed.sections) {
+          let count = 0;
+          parsed.sections.forEach((s: any) => {
+            count += (s.fields || []).length;
+          });
+          return count;
+        }
+      }
       const arr = typeof f.fields === 'string' ? JSON.parse(f.fields) : (f.fields || []);
       let count = 0;
       const walk = (list: any[]) => list.forEach((x: any) => { count++; if (x.children) walk(x.children); });
@@ -112,7 +123,26 @@ export default function Forms({ user }: { user: User }) {
   const openPreviewModal = (row: any) => {
     setActiveForm(row);
     let f: FormField[] = [];
-    try { f = typeof row.fields === 'string' ? JSON.parse(row.fields) : (row.fields || []); } catch {}
+    try {
+      const schema = row.form_schema || row.schema;
+      if (schema) {
+        const parsed = typeof schema === 'string' ? JSON.parse(schema) : schema;
+        if (parsed.sections) {
+          // Map backend sections to FormRenderer sections
+          f = parsed.sections.map((s: any) => ({
+            id: s.id,
+            type: 'section',
+            label: s.title,
+            children: s.fields || [],
+            section_type: row.form_type || row.formType || 'normal'
+          }));
+        }
+      }
+      
+      if (f.length === 0) {
+        f = typeof row.fields === 'string' ? JSON.parse(row.fields) : (row.fields || []);
+      }
+    } catch {}
     setBuilderFields(f);
     setShowPreview(true);
     setOpenMenu(null);
@@ -177,7 +207,9 @@ export default function Forms({ user }: { user: User }) {
       {/* Tabs + Search + Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex gap-1 bg-slate-100 dark:bg-slate-900 rounded-xl p-1">
-          {(['active', 'draft', 'expired'] as const).map(t => (
+          {(['active', 'draft', 'expired'] as const)
+            .filter(t => !((user.role === 'functionary' || user.role === 'teacher') && t === 'draft'))
+            .map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize ${
                 tab === t ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'
@@ -275,7 +307,7 @@ export default function Forms({ user }: { user: User }) {
                   {/* Meta */}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50">
                     <span className="flex items-center gap-1"><Hash size={11} /> {fieldCount} fields</span>
-                    <span className="flex items-center gap-1"><Calendar size={11} /> {row.created_at ? new Date(row.created_at).toLocaleDateString() : '—'}</span>
+                    <span className="flex items-center gap-1"><Calendar size={11} /> {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : row.created_at ? new Date(row.created_at).toLocaleDateString() : '—'}</span>
                     {row.expires_at && (
                       <span className={`flex items-center gap-1 ${isExpired ? 'text-danger font-semibold' : ''}`}>
                         <Clock size={11} /> {isExpired ? 'Expired' : `Due ${new Date(row.expires_at).toLocaleDateString()}`}
@@ -285,12 +317,25 @@ export default function Forms({ user }: { user: User }) {
 
                   {/* Actions */}
                   <div className="flex gap-2 mt-4">
-                    {canFill && (
-                      <button onClick={() => navigate(`/forms/fill?id=${row.id}`)}
-                        className="flex-1 py-2.5 bg-accent-green text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-sm">
+                    {canFill && user.role !== 'functionary' && (
+                      <button onClick={() => navigate(`/fill/${row.id}`)}
+                        className="flex-1 py-2.5 bg-accent-green text-white rounded-xl text-sm font-bold hover:bg-accent-green-hover transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-sm">
                         <Play size={14} /> Fill Form
                       </button>
                     )}
+                    {canFill && user.role === 'functionary' && row.form_type === 'nomination' && (
+                      <button onClick={() => navigate(`/nominations?form_id=${row.id}`)}
+                        className="flex-1 py-2.5 bg-accent-green text-white rounded-xl text-sm font-bold hover:bg-accent-green-hover transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-sm">
+                        <Play size={14} /> Nominate Teachers
+                      </button>
+                    )}
+                    {canFill && user.role === 'functionary' && row.form_type !== 'nomination' && (
+                      <button onClick={() => navigate(`/nominations?form_id=${row.id}`)}
+                        className="flex-1 py-2.5 bg-accent-green text-white rounded-xl text-sm font-bold hover:bg-accent-green-hover transition-colors flex items-center justify-center gap-2 min-h-[44px] shadow-sm">
+                        <Award size={14} /> Nominate Teachers
+                      </button>
+                    )}
+
                     {isAdmin && (
                       <button onClick={() => openBuilder(row)}
                         className={`${canFill ? '' : 'flex-1'} py-2.5 px-4 bg-primary/10 text-primary rounded-xl text-sm font-bold hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 min-h-[44px]`}>

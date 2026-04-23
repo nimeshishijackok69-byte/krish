@@ -12,17 +12,11 @@ import formRoutes from './routes/forms.js';
 import submissionRoutes from './routes/submissions.js';
 import statsRoutes from './routes/stats.js';
 import auditRoutes from './routes/audit.js';
-import userRoutes from './routes/users.js';
 import notificationRoutes from './routes/notifications.js';
-import reviewLevelRoutes from './routes/reviewLevels.js';
-import reviewRoutes from './routes/reviews.js';
-import shortlistRoutes from './routes/shortlist.js';
-import reviewScoreRoutes from './routes/reviewScores.js';
-import commentRoutes from './routes/comments.js';
 import nominationRoutes from './routes/nominations.js';
-import formVersionRoutes from './routes/formVersions.js';
+import reviewRoutes from './routes/reviews.js';
+import userRoutes from './routes/users.js';
 import emailTemplateRoutes from './routes/emailTemplates.js';
-import reminderScheduleRoutes from './routes/reminderSchedules.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,16 +24,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false
+}));
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests from any localhost port (Vite may use 5173, 5174, etc.)
-    if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, process.env.FRONTEND_URL || 'http://localhost:5173');
-    }
-  },
+  origin: true, // Allow all origins in development
   credentials: true
 }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
@@ -49,7 +39,7 @@ app.use(morgan('dev'));
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: process.env.NODE_ENV === 'development' ? 10000 : 100, // Relaxed for development
   message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 app.use('/api', limiter);
@@ -63,17 +53,11 @@ app.use('/api/v1/forms', formRoutes);
 app.use('/api/v1/submissions', submissionRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/audit-logs', auditRoutes);
-app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
-app.use('/api/v1/review-levels', reviewLevelRoutes);
-app.use('/api/v1/reviews', reviewRoutes);
-app.use('/api/v1/shortlist', shortlistRoutes);
-app.use('/api/v1/review-scores', reviewScoreRoutes);
-app.use('/api/v1/comments', commentRoutes);
 app.use('/api/v1/nominations', nominationRoutes);
-app.use('/api/v1/form-versions', formVersionRoutes);
+app.use('/api/v1', reviewRoutes); // Handles /review-levels, /shortlist, /reviews, /review-scores
+app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/email-templates', emailTemplateRoutes);
-app.use('/api/v1/reminder-schedules', reminderScheduleRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));

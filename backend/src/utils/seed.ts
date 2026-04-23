@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import { pathToFileURL } from 'url';
 import { User } from '../models/User.js';
 import { Form } from '../models/Form.js';
 import { connectDB } from '../config/db.js';
@@ -16,26 +18,39 @@ export const seedData = async (shouldExit = true, clearFirst = true) => {
       console.log('\uD83D\uDDD1\uFE0F Existing data cleared');
     }
 
+    const salt = await bcrypt.genSalt(12);
+
     const admin = await User.create({
       email: 'admin@school.edu',
-      passwordHash: 'admin123',
+      passwordHash: await bcrypt.hash('admin123', salt),
       role: 'admin',
       profile: { fullName: 'System Administrator' }
     });
 
-    const reviewers = await User.insertMany([
-      { email: 'priya.reviewer@school.edu', passwordHash: 'reviewer123', role: 'reviewer', profile: { fullName: 'Priya Reviewer' } },
-      { email: 'amit.reviewer@school.edu', passwordHash: 'reviewer123', role: 'reviewer', profile: { fullName: 'Amit Reviewer' } }
-    ]);
+    const reviewersData = [
+      { email: 'reviewer1@cbss.edu', passwordHash: await bcrypt.hash('review123', salt), role: 'reviewer', profile: { fullName: 'Reviewer One' } },
+      { email: 'priya.reviewer@school.edu', passwordHash: await bcrypt.hash('reviewer123', salt), role: 'reviewer', profile: { fullName: 'Priya Reviewer' } }
+    ];
+    for (const r of reviewersData) {
+      await User.create(r);
+    }
 
-    const functionaries = await User.insertMany([
-      { email: 'head.kv001@cbss.school.org', role: 'functionary', profile: { fullName: 'Head KV001', schoolCode: 'KV001' } },
-      { email: 'head.dav002@cbss.school.org', role: 'functionary', profile: { fullName: 'Head DAV002', schoolCode: 'DAV002' } }
-    ]);
+    const functionariesData = [
+      { email: 'head.mh054@cbss.school.org', role: 'functionary', profile: { fullName: 'Head MH054', schoolCode: 'MH054' } },
+      { email: 'head.kv001@cbss.school.org', role: 'functionary', profile: { fullName: 'Head KV001', schoolCode: 'KV001' } }
+    ];
+    for (const f of functionariesData) {
+      await User.create(f);
+    }
 
-    const teachers = await User.insertMany([
+    const teachersData = [
+      { email: 'teacher1@school.edu', role: 'teacher', profile: { fullName: 'Teacher One' } },
+      { email: 'teacher2@school.edu', role: 'teacher', profile: { fullName: 'Teacher Two' } },
       { email: 'anita.teacher@school.edu', role: 'teacher', profile: { fullName: 'Anita Teacher' } }
-    ]);
+    ];
+    for (const t of teachersData) {
+      await User.create(t);
+    }
 
     console.log('\u2705 Users seeded');
 
@@ -80,7 +95,7 @@ export const seedData = async (shouldExit = true, clearFirst = true) => {
               { id: "n3", type: "phone", label: "Mobile Number", required: true },
               { id: "n4", type: "date", label: "Date of Birth", required: true },
               { id: "n5", type: "radio", label: "Gender", options: ["Female", "Male", "Non-binary", "Prefer not to say"], required: true },
-              { id: "n6", type: "text", label: "Current Designation" },
+              { id: "n6", type: "text", label: "Current RAJUation" },
               { id: "n7", type: "dropdown", label: "Highest Qualification", options: ["Diploma", "B.Ed", "M.Ed", "M.Phil", "PhD", "Other"], required: true },
               { id: "n8", type: "number", label: "Total Teaching Experience (years)", required: true },
               { id: "n9", type: "textarea", label: "Describe your top 3 pedagogical innovations", required: true, maxLength: 600 },
@@ -224,6 +239,8 @@ export const seedData = async (shouldExit = true, clearFirst = true) => {
   }
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Use file URL comparison that works across Windows/Unix path formats.
+const executedFileUrl = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+if (import.meta.url === executedFileUrl) {
   seedData();
 }

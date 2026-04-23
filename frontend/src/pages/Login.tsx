@@ -5,7 +5,7 @@ import { GraduationCap, Mail, Key, Phone, ArrowRight, Eye, EyeOff, AlertCircle, 
 
 type Portal = 'select' | 'admin' | 'functionary' | 'teacher';
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
+export default function Login({ onLogin }: { onLogin: (u: any) => void }) {
   const [portal, setPortal] = useState<Portal>('select');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,25 +21,39 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
-    try { await loginWithPassword(email, password); onLogin(); }
-    catch (err: any) { setError(err.message); } finally { setLoading(false); }
-  };
+    try { 
+      const res = await loginWithPassword(email, password); 
+      console.log('Admin Login success:', res);
+      onLogin(res.user); 
+    }
+    catch (err: any) { 
+       console.error('Admin Login failed:', err);
+       setError(err.message); 
+     } finally { setLoading(false); }
+   };
 
-  const handleRequestOTP = async () => {
-    setError(''); setSuccess(''); setLoading(true);
-    try {
-      const res = await requestOTP(email);
-      setOtpSent(true);
-      if (res.school_code) setSchoolCode(res.school_code);
-      setSuccess('OTP sent! Use 123456 for localhost testing.');
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
-  };
-
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(''); setLoading(true);
-    try { await verifyOTP(email, otp); onLogin(); }
-    catch (err: any) { setError(err.message); } finally { setLoading(false); }
-  };
+   const handleRequestOTP = async () => {
+     setError(''); setSuccess(''); setLoading(true);
+     try {
+       const res = await requestOTP(email);
+       setOtpSent(true);
+       if (res.school_code) setSchoolCode(res.school_code);
+       setSuccess('OTP sent! Use 123456 for localhost testing.');
+     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+   };
+  
+    const handleVerifyOTP = async (e: React.FormEvent) => {
+      e.preventDefault(); setError(''); setLoading(true);
+      try { 
+        const res = await verifyOTP(email, otp); 
+        console.log('OTP Verify success:', res);
+        onLogin(res.user); 
+      }
+      catch (err: any) { 
+        console.error('OTP Verify failed:', err);
+        setError(err.message); 
+      } finally { setLoading(false); }
+    };
 
   const inputCls = "w-full px-4 py-2.5 rounded-xl border border-border bg-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm text-fg placeholder-muted";
   const btnCls = "w-full py-2.5 bg-sidebar text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px] shadow-md shadow-sidebar/20";

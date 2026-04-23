@@ -8,15 +8,15 @@ export default function Modal({ open, onClose, title, children, size = 'md', foo
   open: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: string; footer?: React.ReactNode;
 }) {
   useEffect(() => {
-    if (open) { document.body.style.overflow = 'hidden'; const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', h); }; }
+    if (open) { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = ''; }; }
     else document.body.style.overflow = '';
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-sidebar/60 backdrop-blur-sm" onClick={onClose} />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-sidebar/60 backdrop-blur-sm" />
           <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={`relative bg-card rounded-2xl shadow-2xl w-full ${sizes[size] || sizes.md} max-h-[90vh] overflow-hidden flex flex-col border border-border`}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">

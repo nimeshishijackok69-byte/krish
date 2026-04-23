@@ -35,6 +35,27 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   }
 };
 
+export const optionalAuthenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_ACCESS_SECRET!);
+    
+    const user = await User.findById(decoded.id).select('-passwordHash');
+    if (user && user.isActive) {
+      req.user = user;
+    }
+    next();
+  } catch (err: any) {
+    // If token is invalid or expired, just proceed as anonymous
+    next();
+  }
+};
+
 export const authorize = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {

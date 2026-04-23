@@ -24,6 +24,8 @@ initTheme();
 function AppContent() {
   const { user, loading, logout, refreshUser } = useAuth();
 
+  console.log('AppContent render:', { user, loading }); // Debug log
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
@@ -37,28 +39,33 @@ function AppContent() {
   }
 
   if (!user) {
-    return <Login onLogin={refreshUser} />;
+    // Allow access to public form filling even if not logged in
+    const isPublicFill = window.location.pathname.startsWith('/fill/');
+    if (!isPublicFill) {
+      return <Login onLogin={refreshUser} />;
+    }
   }
 
   return (
-    <Layout user={user} onLogout={logout}>
+    <Layout user={user || { id: 'anon', name: 'Anonymous', role: 'teacher', email: '' }} onLogout={logout}>
       <Routes>
-        <Route path="/" element={<Dashboard user={user} />} />
-        {user.role === 'admin' && <Route path="/users" element={<UserManagement />} />}
-        <Route path="/forms" element={<Forms user={user} />} />
-        {user.role === 'admin' && <Route path="/forms/new" element={<FormBuilder />} />}
-        {user.role === 'admin' && <Route path="/forms/:id/builder" element={<FormBuilder />} />}
-        <Route path="/fill/:id" element={<FormFill />} />
-        <Route path="/forms/view" element={<FormView user={user} />} />
-        <Route path="/submissions" element={<Submissions user={user} />} />
-        <Route path="/reviews" element={<ReviewSystem user={user} />} />
-        {user.role === 'functionary' && <Route path="/nominations" element={<Nominations user={user} />} />}
-        {user.role === 'admin' && <Route path="/analytics" element={<Analytics />} />}
-        {user.role === 'admin' && <Route path="/email-center" element={<EmailCenter user={user} />} />}
-        {user.role === 'admin' && <Route path="/audit-logs" element={<AuditLogs />} />}
-        {user.role === 'admin' && <Route path="/exports" element={<Exports />} />}
-        <Route path="/profile" element={<Profile user={user} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/" element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} />
+        {user?.role === 'admin' && <Route path="/users" element={<UserManagement />} />}
+        <Route path="/forms" element={user ? <Forms user={user} /> : <Navigate to="/login" />} />
+        {user?.role === 'admin' && <Route path="/forms/new" element={<FormBuilder />} />}
+        {user?.role === 'admin' && <Route path="/forms/:id/builder" element={<FormBuilder />} />}
+        <Route path="/fill/:id" element={<FormFill user={user || { id: 'anon', name: 'Anonymous', role: 'teacher', email: '' }} />} />
+        <Route path="/forms/view" element={user ? <FormView user={user} /> : <Navigate to="/login" />} />
+        <Route path="/submissions" element={user ? <Submissions user={user} /> : <Navigate to="/login" />} />
+        <Route path="/reviews" element={user ? <ReviewSystem user={user} /> : <Navigate to="/login" />} />
+        {user?.role === 'functionary' && <Route path="/nominations" element={<Nominations user={user} />} />}
+        {user?.role === 'admin' && <Route path="/analytics" element={<Analytics />} />}
+        {user?.role === 'admin' && <Route path="/email-center" element={<EmailCenter user={user} />} />}
+        {user?.role === 'admin' && <Route path="/audit-logs" element={<AuditLogs />} />}
+        {user?.role === 'admin' && <Route path="/exports" element={<Exports />} />}
+        <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
+        <Route path="/login" element={<Login onLogin={refreshUser} />} />
+        <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
       </Routes>
     </Layout>
   );

@@ -4,17 +4,25 @@ import { AuthRequest } from '../middleware/auth.js';
 
 export const getForms = async (req: AuthRequest, res: Response) => {
   try {
-    const { status, id } = req.query;
+    const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+    const id = typeof req.query.id === 'string' ? req.query.id : undefined;
     const query: any = {};
     if (id) {
-      const form = await Form.findById(id);
-      return res.status(200).json(form ? { ...form.toObject(), id: form._id } : { error: 'Not found' });
+      let form;
+      if (id.match(/^[0-9a-fA-F]{24}$/)) {
+        form = await Form.findById(id);
+      } else {
+        form = await Form.findOne({ shareableLink: id });
+      }
+      
+      if (!form) return res.status(404).json({ error: 'Form not found' });
+      return res.status(200).json({ ...form.toObject(), id: form._id });
     }
 
     if (status) query.status = status;
     
     // Admins see all, reviewers see active
-    if (req.user.role === 'reviewer') query.status = 'active';
+    if (req.user?.role === 'reviewer') query.status = 'active';
 
     const forms = await Form.find(query).sort({ createdAt: -1 });
     const mapped = forms.map(f => ({ 
@@ -58,6 +66,29 @@ export const getFormByLink = async (req: Request, res: Response) => {
 
 export const createForm = async (req: AuthRequest, res: Response) => {
   try {
+    const { action, form_id } = req.body;
+
+    // Handle cloning
+    if (action === 'clone' && form_id) {
+      const original = await Form.findById(form_id);
+      if (!original) return res.status(404).json({ error: 'Original form not found' });
+
+      const cloneData = original.toObject();
+      delete cloneData._id;
+      delete cloneData.createdAt;
+      delete cloneData.updatedAt;
+      cloneData.title = `${cloneData.title} (Clone)`;
+      cloneData.status = 'draft';
+      cloneData.shareableLink = Math.random().toString(36).substring(2, 10);
+      cloneData.adminId = req.user._id;
+
+      const clonedForm = await Form.create(cloneData);
+      return res.status(201).json({ 
+        success: true, 
+        data: { ...clonedForm.toObject(), id: clonedForm._id, form_type: clonedForm.formType } 
+      });
+    }
+
     const data = { ...req.body };
     if (typeof data.settings === 'string') {
       try { data.settings = JSON.parse(data.settings); } catch {}

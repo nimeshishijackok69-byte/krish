@@ -1,7 +1,7 @@
 import { api } from './api';
 
 export interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: 'admin' | 'reviewer' | 'functionary' | 'teacher';
@@ -14,17 +14,38 @@ export interface User {
 }
 
 export function getStoredUser(): User | null {
-  try { const u = localStorage.getItem('auth_user'); return u ? JSON.parse(u) : null; } catch { return null; }
+  try {
+    const u = localStorage.getItem('auth_user');
+    if (!u || u === 'undefined') return null;
+    const user = JSON.parse(u);
+    console.log('getStoredUser:', user); // Debug log
+    return user;
+  } catch (e) {
+    console.error('Error getting stored user:', e); // Debug log
+    return null;
+  }
 }
 export function getToken(): string | null { return localStorage.getItem('auth_token'); }
 export function getSessionExpiry(): number | null {
-  try { const t = getToken(); if (!t) return null; const d = JSON.parse(atob(t)); return d.exp || null; } catch { return null; }
+  try { 
+    const t = getToken(); 
+    if (!t) return null; 
+    const payload = t.split('.')[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const d = JSON.parse(jsonPayload);
+    return d.exp ? d.exp * 1000 : null; // JWT exp is in seconds
+  } catch { return null; }
 }
 
 export async function loginWithPassword(email: string, password: string) {
   const res = await api.post('/auth', { action: 'login-password', email, password });
   localStorage.setItem('auth_user', JSON.stringify(res.user));
   localStorage.setItem('auth_token', res.token);
+  console.log('loginWithPassword success, user stored:', res.user); // Debug log
   return res;
 }
 
@@ -38,6 +59,7 @@ export async function verifyOTP(emailOrPhone: string, otp: string) {
   const res = await api.post('/auth', { action: 'verify-otp', otp, ...(isPhone ? { phone: emailOrPhone } : { email: emailOrPhone }) });
   localStorage.setItem('auth_user', JSON.stringify(res.user));
   localStorage.setItem('auth_token', res.token);
+  console.log('verifyOTP success, user stored:', res.user); // Debug log
   return res;
 }
 
@@ -47,8 +69,13 @@ export async function verifyToken(): Promise<User | null> {
   try {
     const res = await api.post('/auth', { action: 'verify-token', token });
     localStorage.setItem('auth_user', JSON.stringify(res.user));
+    console.log('verifyToken success, user stored:', res.user); // Debug log
     return res.user;
-  } catch { logout(); return null; }
+  } catch (e) {
+    console.error('verifyToken failed:', e); // Debug log
+    logout();
+    return null;
+  }
 }
 
 export function logout() {

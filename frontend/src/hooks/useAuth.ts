@@ -11,13 +11,19 @@ export function useAuth() {
       setUser(u);
       setSessionExpiry(getSessionExpiry());
       setLoading(false);
-    }).catch(() => setLoading(false));
+      console.log('useAuth useEffect - user after verifyToken:', u); // Debug log
+    }).catch((e) => {
+      console.error('useAuth useEffect - verifyToken failed:', e); // Debug log
+      setLoading(false);
+    });
   }, []);
 
   const logout = useCallback(() => { doLogout(); setUser(null); }, []);
-  const refreshUser = useCallback(() => {
-    setUser(getStoredUser());
+  const refreshUser = useCallback((newUser?: User) => {
+    const refreshedUser = newUser || getStoredUser();
+    setUser(refreshedUser);
     setSessionExpiry(getSessionExpiry());
+    console.log('refreshUser called, user set to:', refreshedUser); // Debug log
   }, []);
 
   return { user, loading, logout, refreshUser, sessionExpiry };

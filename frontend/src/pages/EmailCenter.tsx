@@ -266,7 +266,7 @@ function TemplatesTab() {
           const sampleVars: Record<string, string> = {
             user_name: 'Anita Singh', teacher_name: 'Anita Singh', reviewer_name: 'Priya Sharma',
             otp: '123456', form_title: 'Annual Teacher Performance Survey 2024',
-            form_link: `${window.location.origin}/forms/fill?id=1`, school_code: 'KV001',
+            form_link: `${window.location.origin}/fill/1`, school_code: 'KV001',
             deadline: '31 Dec 2027', submitted_at: new Date().toLocaleString(),
             email: 'anita.teacher@school.edu', login_link: window.location.origin,
             level_name: 'Level 1 - Initial Screening', submission_count: '24', pending_count: '8',
@@ -374,7 +374,7 @@ function SendTab() {
     const allVars = {
       ...variables,
       form_title: selectedForm?.title || variables.form_title || '{{form_title}}',
-      form_link: selectedForm ? `${window.location.origin}/forms/fill?id=${selectedForm.id}` : '{{form_link}}',
+      form_link: selectedForm ? `${window.location.origin}/fill/${selectedForm.id}` : '{{form_link}}',
       deadline: selectedForm?.expires_at ? new Date(selectedForm.expires_at).toLocaleDateString() : '{{deadline}}',
       teacher_name: recipients[0]?.name || '{{teacher_name}}',
       user_name: recipients[0]?.name || '{{user_name}}',
@@ -395,7 +395,7 @@ function SendTab() {
       const allVars = {
         ...variables,
         form_title: selectedForm?.title || '',
-        form_link: selectedForm ? `${window.location.origin}/forms/fill?id=${selectedForm.id}` : '',
+        form_link: selectedForm ? `${window.location.origin}/fill/${selectedForm.id}` : '',
         deadline: selectedForm?.expires_at ? new Date(selectedForm.expires_at).toLocaleDateString() : '',
         school_code: schoolCode,
         login_link: window.location.origin,
