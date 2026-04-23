@@ -225,3 +225,102 @@ Verified dashboard payloads after the review flow:
 - Review audit log found with IP metadata
 - Functionary stats sample: `2` nominations, `50%` completion
 - Reviewer stats sample: `0` pending, `1` completed, `92` avg score
+
+---
+
+## Additional Run: Sections 6 and 7
+
+Date: 2026-04-23
+Backend: `http://localhost:5001`
+Frontend build: successful
+
+### Scope
+
+Ran the requested checks for:
+
+1. Section `6` Form Builder Tests
+2. Section `7` Nomination Flow
+
+### What I Changed
+
+#### Backend
+
+- `backend/src/models/Form.ts`
+  Added support for rating-field metadata (`min` / `max`) and the `rating` field type in the form schema
+
+- `backend/src/models/FormVersion.ts`
+- `backend/src/controllers/formVersions.ts`
+- `backend/src/routes/formVersions.ts`
+- `backend/src/app.ts`
+  Added form-version storage plus `GET /api/v1/form-versions?form_id=...`
+  Backfills `v1 Initial creation` automatically for older seeded forms with no saved history yet
+
+- `backend/src/controllers/forms.ts`
+  Changed form cloning to create `[Form Name] (Copy)` instead of `(Clone)`
+  Added version snapshots on create, clone, and update so the history modal has real data
+
+- `backend/src/controllers/nominations.ts`
+  Normalized bulk and single nominations to use the authenticated functionary on the server
+  Defaulted nomination creation to the invited flow with `invited_at`
+  Enforced per-form nomination limits from `settings.nomination_limit` / `max_nominations`
+  Switched bulk creation away from `insertMany` so nomination token generation works correctly
+
+#### Frontend
+
+- `frontend/src/pages/FormBuilder.tsx`
+  Added `Rating` as a supported field type in the unified builder
+  Added a visible `Section` add action for branching and multi forms
+  Added number min/max controls and rating min/max controls
+  Improved file-upload preview so allowed formats and max size are shown in preview mode
+
+- `frontend/src/pages/FormFill.tsx`
+  Added runtime support for rendering rating fields in the filler UI
+
+- `frontend/src/pages/Nominations.tsx`
+  Switched add/import flows to `Add & Invite` and `Import & Invite`
+  Fixed personalised link copying to use `/fill/{form_id}?token=...&sc=...`
+  Read nomination limits from both `nomination_limit` and legacy `max_nominations`
+  Added remaining-slot feedback and disabled add/import actions when the selected form is full
+
+- `frontend/src/pages/Forms.tsx`
+  Normalized the legacy nomination-settings editor to save `nomination_limit`
+
+### Verification After Fixes
+
+Verified through live API flow:
+
+- `GET /form-versions?form_id=<nominationForm>` now returns `v1 Initial creation` for seeded forms
+- Cloning a form now creates `Best Teacher Award Nomination 2024 (Copy)` with `draft` status
+- Updating a cloned form creates a second history row:
+  `v2 Updated settings`
+- Bulk nomination now succeeds and creates invited records
+- Single nomination creation now stores invited records immediately
+- Nomination limit enforcement now blocks the 6th nomination with:
+  `409 Nomination limit reached (5/5)`
+- Final nomination set for the form stayed capped at `5`
+
+Verified through source-path checks plus successful frontend build:
+
+- Form builder now exposes `Rating` and `Section` affordances required for section `6`
+- File-upload preview now shows format/size metadata
+- Copied nomination links now point to the real fill route
+- Add/import actions in the nomination UI now match the invited workflow expected by section `7`
+
+### Concrete verification snapshot
+
+- Version history on seeded nomination form:
+  `v1 Initial creation`
+- Version history on updated clone:
+  `v2 Updated settings`
+  `v1 Cloned from Best Teacher Award Nomination 2024 as v2`
+- Bulk nomination result: `201`, `count: 2`
+- Three additional single invites: all `201`
+- Sixth nomination attempt: `409`
+- Final nomination statuses for the form: `invited x5`
+
+### Remaining Notes
+
+- I still could not run browser-driven UI checks in this environment because the local browser automation tool is not installed, so section `6` and `7` UI verification was completed through:
+  live API verification
+  targeted source-path inspection
+  successful frontend/backend production builds

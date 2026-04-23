@@ -17,6 +17,7 @@ import nominationRoutes from './routes/nominations.js';
 import reviewRoutes from './routes/reviews.js';
 import userRoutes from './routes/users.js';
 import emailTemplateRoutes from './routes/emailTemplates.js';
+import formVersionRoutes from './routes/formVersions.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +59,7 @@ app.use('/api/v1/nominations', nominationRoutes);
 app.use('/api/v1', reviewRoutes); // Handles /review-levels, /shortlist, /reviews, /review-scores
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/email-templates', emailTemplateRoutes);
+app.use('/api/v1/form-versions', formVersionRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));

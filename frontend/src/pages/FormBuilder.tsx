@@ -8,11 +8,12 @@ import {
 import { api } from '../lib/api';
 
 // ─── Types (matching App 1 exactly) ───────────────────────────────────────────
-type FieldType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'dropdown' | 'radio' | 'checkbox' | 'file' | 'mcq';
+type FieldType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'dropdown' | 'radio' | 'checkbox' | 'file' | 'mcq' | 'rating';
 
 type Field = {
   id: string; type: FieldType; label: string; required?: boolean; placeholder?: string;
   options?: string[]; maxLength?: number; fileTypes?: string; maxSizeMB?: number;
+  min?: number; max?: number;
   correct?: number | string; marks?: number; negative?: number;
   visibleIf?: { fieldId: string; op: 'eq' | 'neq'; value: string };
 };
@@ -36,7 +37,7 @@ type FormState = {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const fieldIcons: Record<FieldType, React.ComponentType<{ size?: number }>> = {
   text: Type, textarea: AlignLeft, number: Hash, email: Mail, phone: Phone, date: CalendarDays,
-  dropdown: ListChecks, radio: Radio, checkbox: CheckSquare, file: Upload, mcq: HelpCircle,
+  dropdown: ListChecks, radio: Radio, checkbox: CheckSquare, file: Upload, mcq: HelpCircle, rating: HelpCircle,
 };
 
 const newId = () => Math.random().toString(36).slice(2, 9);
@@ -44,6 +45,7 @@ const newField = (type: FieldType): Field => ({
   id: newId(), type, label: `${type[0].toUpperCase() + type.slice(1)} question`, required: false,
   ...(type === 'dropdown' || type === 'radio' || type === 'checkbox' || type === 'mcq' ? { options: ['Option 1', 'Option 2'] } : {}),
   ...(type === 'mcq' ? { marks: 1, correct: 0 } : {}),
+  ...(type === 'rating' ? { min: 1, max: 5 } : {}),
 });
 
 // ─── Reusable UI (App 1 style) ────────────────────────────────────────────────
@@ -185,6 +187,7 @@ export default function FormBuilder() {
     { type: 'radio', label: 'Radio' },
     { type: 'checkbox', label: 'Checkbox' },
     { type: 'file', label: 'File upload' },
+    { type: 'rating', label: 'Rating' },
     ...(form.form_type === 'quiz' || form.form_type === 'multi' ? [{ type: 'mcq' as FieldType, label: 'MCQ (auto-score)' }] : []),
   ];
 
@@ -245,6 +248,11 @@ export default function FormBuilder() {
                   </button>
                 );
               })}
+              {(form.form_type === 'branching' || form.form_type === 'multi') && (
+                <button onClick={addSection} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-blue-soft text-ink-soft">
+                  <Plus size={15} /> Section
+                </button>
+              )}
             </div>
           </Card>
         </div>
@@ -293,6 +301,14 @@ export default function FormBuilder() {
                               <input type="number" className="input !py-1.5 mt-1" value={f.maxLength || ''} onChange={e => updateField(activeSection, f.id, { maxLength: +e.target.value || undefined })} /></label>
                           </div>
                         )}
+                        {f.type === 'number' && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className="text-xs"><span className="text-muted">Min value</span>
+                              <input type="number" className="input !py-1.5 mt-1" value={f.min ?? ''} onChange={e => updateField(activeSection, f.id, { min: e.target.value === '' ? undefined : +e.target.value })} /></label>
+                            <label className="text-xs"><span className="text-muted">Max value</span>
+                              <input type="number" className="input !py-1.5 mt-1" value={f.max ?? ''} onChange={e => updateField(activeSection, f.id, { max: e.target.value === '' ? undefined : +e.target.value })} /></label>
+                          </div>
+                        )}
                         {(f.type === 'dropdown' || f.type === 'radio' || f.type === 'checkbox' || f.type === 'mcq') && (
                           <div>
                             <div className="text-xs text-muted mb-1">Options</div>
@@ -325,6 +341,14 @@ export default function FormBuilder() {
                               <input className="input !py-1.5 mt-1" placeholder="pdf,jpg,png" value={f.fileTypes || ''} onChange={e => updateField(activeSection, f.id, { fileTypes: e.target.value })} /></label>
                             <label className="text-xs"><span className="text-muted">Max size MB</span>
                               <input type="number" className="input !py-1.5 mt-1" value={f.maxSizeMB || 5} onChange={e => updateField(activeSection, f.id, { maxSizeMB: +e.target.value })} /></label>
+                          </div>
+                        )}
+                        {f.type === 'rating' && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className="text-xs"><span className="text-muted">Min rating</span>
+                              <input type="number" className="input !py-1.5 mt-1" value={f.min ?? 1} onChange={e => updateField(activeSection, f.id, { min: +e.target.value || 1 })} /></label>
+                            <label className="text-xs"><span className="text-muted">Max rating</span>
+                              <input type="number" className="input !py-1.5 mt-1" value={f.max ?? 5} onChange={e => updateField(activeSection, f.id, { max: +e.target.value || 5 })} /></label>
                           </div>
                         )}
                         {(form.form_type === 'branching' || form.form_type === 'multi') && (
@@ -484,7 +508,14 @@ function PreviewField({ f }: { f: Field }) {
   if (f.type === 'dropdown') return <select className="select mt-1"><option>— Select —</option>{f.options?.map(o => <option key={o}>{o}</option>)}</select>;
   if (f.type === 'radio' || f.type === 'mcq') return <div className="mt-1 space-y-1">{f.options?.map(o => <label key={o} className="flex items-center gap-2 text-sm"><input type="radio" name={f.id}/> {o}</label>)}</div>;
   if (f.type === 'checkbox') return <div className="mt-1 space-y-1">{f.options?.map(o => <label key={o} className="flex items-center gap-2 text-sm"><input type="checkbox"/> {o}</label>)}</div>;
-  if (f.type === 'file') return <input type="file" className="input mt-1"/>;
+  if (f.type === 'file') return (
+    <div className="mt-1 rounded-xl border border-dashed border-border p-3 text-sm text-muted">
+      <div className="font-medium text-ink">Upload area</div>
+      <div>{f.fileTypes ? `Formats: ${f.fileTypes}` : 'Formats: any'}</div>
+      <div>{f.maxSizeMB ? `Max size: ${f.maxSizeMB} MB` : 'Max size: default'}</div>
+    </div>
+  );
   if (f.type === 'date') return <input type="date" className="input mt-1"/>;
+  if (f.type === 'rating') return <div className="mt-1 flex gap-2">{Array.from({ length: f.max ?? 5 }, (_, idx) => <button key={idx} type="button" className="w-9 h-9 rounded-lg border border-border text-sm">{idx + 1}</button>)}</div>;
   return <input type={f.type === 'number' ? 'number' : 'text'} className="input mt-1" placeholder={f.placeholder} maxLength={f.maxLength}/>;
 }

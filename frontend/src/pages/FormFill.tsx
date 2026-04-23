@@ -9,11 +9,12 @@ import { api } from '../lib/api';
 import { User } from '../lib/auth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type FieldType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'dropdown' | 'radio' | 'checkbox' | 'file' | 'mcq';
+type FieldType = 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'date' | 'dropdown' | 'radio' | 'checkbox' | 'file' | 'mcq' | 'rating';
 
 type Field = {
   id: string; type: FieldType; label: string; required?: boolean; placeholder?: string;
   options?: string[]; maxLength?: number; fileTypes?: string; maxSizeMB?: number;
+  min?: number; max?: number;
   correct?: number | string; marks?: number; negative?: number;
   visibleIf?: { fieldId: string; op: 'eq' | 'neq'; value: string };
 };
@@ -570,6 +571,21 @@ function FieldRenderer({ f, value, onChange, shuffle }: { f: Field; value: unkno
                 <input type="file" className="hidden" accept={f.fileTypes ? f.fileTypes.split(',').map(x => `.${x.trim()}`).join(',') : undefined}
                   onChange={e => onChange(e.target.files?.[0]?.name || '')} />
               </label>
+            );
+          case 'rating':
+            return (
+              <div className="mt-2 flex gap-2 flex-wrap">
+                {Array.from({ length: f.max || 5 }, (_, index) => index + 1).map(score => (
+                  <button
+                    key={score}
+                    type="button"
+                    onClick={() => onChange(score)}
+                    className={`w-11 h-11 rounded-lg border font-semibold transition-colors ${Number(value) === score ? 'border-blue bg-blue-soft text-blue' : 'border-border hover:bg-canvas'}`}
+                  >
+                    {score}
+                  </button>
+                ))}
+              </div>
             );
           default:
             return <input className="input mt-2" placeholder={f.placeholder} maxLength={f.maxLength}

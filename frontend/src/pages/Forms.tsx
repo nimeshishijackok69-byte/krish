@@ -421,7 +421,7 @@ export default function Forms({ user }: { user: User }) {
               <h4 className="text-sm font-bold text-teal-800 dark:text-teal-300 flex items-center gap-2"><Award size={16} /> Nomination</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-xs font-semibold text-teal-600 mb-1 block">Max Teachers per Functionary</label>
-                  <input type="number" value={form.settings.max_nominations || ''} onChange={e => setForm(p => ({ ...p, settings: { ...p.settings, max_nominations: parseInt(e.target.value) || 0 } }))}
+                  <input type="number" value={form.settings.nomination_limit || form.settings.max_nominations || ''} onChange={e => setForm(p => ({ ...p, settings: { ...p.settings, nomination_limit: parseInt(e.target.value) || 0 } }))}
                     className="w-full px-3 py-2 rounded-xl border border-teal-200 bg-white dark:bg-gray-800 text-sm outline-none" placeholder="5" /></div>
                 <div><label className="text-xs font-semibold text-teal-600 mb-1 block">Teacher Access</label>
                   <select value={form.settings.teacher_login || 'otp'} onChange={e => setForm(p => ({ ...p, settings: { ...p.settings, teacher_login: e.target.value } }))}

@@ -25,6 +25,22 @@ export default function Nominations({ user }: { user: User }) {
 
   const schoolCode = user.school_code || (user.email?.match(/^head\.([a-z0-9]+)@/i)?.[1]?.toUpperCase()) || '';
   const isAdmin = user.role === 'admin';
+  const selectedFormDetails = forms.find(f => f.id === selectedForm);
+
+  const getNominationLimit = (form: any) => {
+    try {
+      const settings = typeof form?.settings === 'string' ? JSON.parse(form.settings) : form?.settings;
+      return settings?.nomination_limit || settings?.max_nominations || 5;
+    } catch {
+      return 5;
+    }
+  };
+
+  const getRemainingSlots = (formId: string) => {
+    const form = forms.find(f => f.id === formId);
+    if (!form) return 0;
+    return Math.max(getNominationLimit(form) - nomsByForm(formId).length, 0);
+  };
 
   const fetchData = async () => {
     try {
@@ -52,6 +68,7 @@ export default function Nominations({ user }: { user: User }) {
   const handleAddTeacher = async () => {
     if (!selectedForm) return alert('Select a form first');
     if (!addForm.teacher_name || !addForm.teacher_email) return alert('Please fill in name and email');
+    if (getRemainingSlots(selectedForm) <= 0) return alert('Nomination limit reached for this form');
     
     try {
       setLoading(true);
@@ -59,7 +76,8 @@ export default function Nominations({ user }: { user: User }) {
         form_id: selectedForm, functionary_id: user.id, teacher_name: addForm.teacher_name,
         teacher_email: addForm.teacher_email, teacher_phone: addForm.teacher_phone,
         school_code: schoolCode, link_type: addForm.link_type,
-        status: 'pending'
+        status: 'invited',
+        invited_at: new Date().toISOString()
       });
       setShowAdd(false); setAddForm({ teacher_name: '', teacher_email: '', teacher_phone: '', link_type: 'otp' }); 
       fetchData();
@@ -78,12 +96,13 @@ export default function Nominations({ user }: { user: User }) {
     if (!selectedForm) return alert('Select a form first');
     const lines = bulkText.trim().split('\n').filter(l => l.trim());
     if (lines.length === 0) return alert('No data provided');
+    if (lines.length > getRemainingSlots(selectedForm)) return alert(`Only ${getRemainingSlots(selectedForm)} nomination slots remaining for this form`);
 
     try {
       setLoading(true);
       const nomList = lines.map(line => {
         const parts = line.split(',').map(p => p.trim());
-        return { form_id: selectedForm, functionary_id: user.id, teacher_name: parts[0], teacher_email: parts[1], teacher_phone: parts[2] || '', school_code: schoolCode, link_type: 'otp', status: 'pending' };
+        return { form_id: selectedForm, functionary_id: user.id, teacher_name: parts[0], teacher_email: parts[1], teacher_phone: parts[2] || '', school_code: schoolCode, link_type: 'otp', status: 'invited', invited_at: new Date().toISOString() };
       });
       await api.post('/nominations', { action: 'bulk-nominate', nominations: nomList });
       setShowBulk(false); setBulkText(''); 
@@ -122,7 +141,7 @@ export default function Nominations({ user }: { user: User }) {
   };
 
   const copyLink = (nom: any) => {
-    const link = `${window.location.origin}/form/fill?token=${nom.unique_token}&sc=${nom.school_code}`;
+    const link = `${window.location.origin}/fill/${nom.form_id}?token=${nom.unique_token}&sc=${nom.school_code}`;
     navigator.clipboard.writeText(link).then(() => alert('Link copied!'));
   };
 
@@ -147,8 +166,8 @@ export default function Nominations({ user }: { user: User }) {
             <option value="">All Active Forms</option>
             {forms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
           </select>
-          <button onClick={() => setShowBulk(true)} className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:bg-slate-900"><Upload size={14} /> CSV Import</button>
-          <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover min-h-[44px]"><UserPlus size={16} /> Add Teacher</button>
+          <button onClick={() => setShowBulk(true)} disabled={!selectedForm || getRemainingSlots(selectedForm) <= 0} className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"><Upload size={14} /> CSV Import</button>
+          <button onClick={() => setShowAdd(true)} disabled={!selectedForm || getRemainingSlots(selectedForm) <= 0} className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"><UserPlus size={16} /> Add Teacher</button>
         </div>
       </div>
 
@@ -156,7 +175,7 @@ export default function Nominations({ user }: { user: User }) {
       {forms.filter(f => !selectedForm || f.id === selectedForm).map(f => {
         const noms = nomsByForm(f.id);
         let maxNom = 5;
-        try { const s = typeof f.settings === 'string' ? JSON.parse(f.settings) : f.settings; maxNom = s?.max_nominations || 5; } catch {}
+        try { const s = typeof f.settings === 'string' ? JSON.parse(f.settings) : f.settings; maxNom = s?.nomination_limit || s?.max_nominations || 5; } catch {}
         return (
           <div key={f.id} onClick={() => { setSelectedForm(f.id); setShowAdd(true); }}
             className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm cursor-pointer hover:border-primary transition-all group">
@@ -241,12 +260,15 @@ export default function Nominations({ user }: { user: User }) {
               <option value="otp">OTP Required</option><option value="direct">Direct Link (No Login)</option></select></div>
           )}
           {!isAdmin && <input type="hidden" value="otp" onChange={() => {}} />}
+          {selectedFormDetails && (
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">Remaining slots for this form: <span className="font-bold">{getRemainingSlots(selectedForm)}</span> / {getNominationLimit(selectedFormDetails)}</p>
+          )}
           <p className="text-[10px] text-slate-500 dark:text-slate-400">School code <span className="font-bold">{schoolCode}</span> will be auto-attached. Teacher account auto-created if new.</p>
           <div className="flex justify-end gap-3">
             <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
             <button onClick={handleAddTeacher} disabled={loading} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover disabled:opacity-50 flex items-center gap-2">
               {loading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              {loading ? 'Adding...' : 'Add Teacher'}
+              {loading ? 'Adding...' : 'Add & Invite'}
             </button>
           </div>
         </div>
@@ -262,7 +284,7 @@ export default function Nominations({ user }: { user: User }) {
           <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={8} placeholder="Paste CSV data..." className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-sm outline-none font-mono resize-none" />
           <div className="flex justify-end gap-3">
             <button onClick={() => setShowBulk(false)} className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900">Cancel</button>
-            <button onClick={handleBulkAdd} disabled={!bulkText.trim()} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover disabled:opacity-50">Import Teachers</button>
+            <button onClick={handleBulkAdd} disabled={!bulkText.trim()} className="px-6 py-2 bg-primary text-white text-sm rounded-xl font-semibold hover:bg-primary-hover disabled:opacity-50">Import & Invite</button>
           </div>
         </div>
       </Modal>

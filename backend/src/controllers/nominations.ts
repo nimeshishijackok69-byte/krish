@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Nomination } from '../models/Nomination.js';
 import { User } from '../models/User.js';
+import { Form } from '../models/Form.js';
 import { AuthRequest } from '../middleware/auth.js';
 
 const ensureTeacherUser = async (teacherData: any) => {
@@ -41,22 +42,65 @@ export const getNominations = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const resolveNominationLimit = (settings: any) => {
+  if (!settings) return 5;
+  const parsedSettings = typeof settings === 'string' ? JSON.parse(settings) : settings;
+  return parsedSettings?.nomination_limit || parsedSettings?.max_nominations || 5;
+};
+
+const enforceNominationLimit = async (formId: string, functionaryId: string) => {
+  const form = await Form.findById(formId).lean();
+  if (!form) {
+    throw Object.assign(new Error('Form not found'), { status: 404 });
+  }
+
+  const limit = resolveNominationLimit(form.settings);
+  const currentCount = await Nomination.countDocuments({ form_id: formId, functionary_id: functionaryId });
+  if (currentCount >= limit) {
+    throw Object.assign(new Error(`Nomination limit reached (${limit}/${limit})`), { status: 409 });
+  }
+};
+
 export const createNomination = async (req: AuthRequest, res: Response) => {
   try {
     const { action, nominations } = req.body;
 
     if (action === 'bulk-nominate' && Array.isArray(nominations)) {
-      const created = await Nomination.insertMany(nominations);
+      const normalized = [];
+      for (const nomination of nominations) {
+        const formId = nomination.form_id || req.body.form_id;
+        await enforceNominationLimit(String(formId), String(req.user._id));
+        normalized.push({
+          ...nomination,
+          form_id: formId,
+          functionary_id: req.user._id,
+          school_code: nomination.school_code || req.user.profile?.schoolCode || '',
+          status: nomination.status || 'invited',
+          invited_at: nomination.status === 'pending' ? nomination.invited_at : (nomination.invited_at || new Date())
+        });
+      }
+
+      const created = [];
+      for (const nomination of normalized) {
+        created.push(await Nomination.create(nomination));
+      }
       // Create user accounts for each nominated teacher
-      for (const nom of nominations) {
+      for (const nom of normalized) {
         await ensureTeacherUser(nom);
       }
       return res.status(201).json({ success: true, count: created.length });
     }
 
+    await enforceNominationLimit(String(req.body.form_id), String(req.user._id));
+
+    const status = req.body.status || 'invited';
+
     const nomination = await Nomination.create({
       ...req.body,
       functionary_id: req.user._id, // Ensure functionary_id is set to the current user
+      school_code: req.body.school_code || req.user.profile?.schoolCode || '',
+      status,
+      invited_at: status === 'invited' ? (req.body.invited_at || new Date()) : req.body.invited_at
     });
 
     // Create user account for the nominated teacher
@@ -64,7 +108,7 @@ export const createNomination = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({ success: true, data: { ...nomination.toObject(), id: nomination._id } });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 };
 

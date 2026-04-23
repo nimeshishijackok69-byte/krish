@@ -5,12 +5,14 @@ const fieldSchema = new mongoose.Schema({
   label: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ['text', 'textarea', 'number', 'email', 'phone', 'date', 'dropdown', 'radio', 'checkbox', 'file', 'mcq'], 
+    enum: ['text', 'textarea', 'number', 'email', 'phone', 'date', 'dropdown', 'radio', 'checkbox', 'file', 'mcq', 'rating'], 
     required: true 
   },
   required: { type: Boolean, default: false },
   placeholder: String,
   options: [String],
+  min: Number,
+  max: Number,
   maxLength: Number,
   fileTypes: String,
   maxSizeMB: Number,

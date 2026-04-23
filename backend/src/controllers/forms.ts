@@ -1,6 +1,32 @@
 import { Request, Response } from 'express';
 import { Form } from '../models/Form.js';
+import { FormVersion } from '../models/FormVersion.js';
 import { AuthRequest } from '../middleware/auth.js';
+
+const createVersionSnapshot = async ({
+  formId,
+  version,
+  title,
+  changeNotes,
+  createdBy,
+  snapshot
+}: {
+  formId: any;
+  version: number;
+  title?: string;
+  changeNotes?: string;
+  createdBy?: any;
+  snapshot: any;
+}) => {
+  await FormVersion.create({
+    formId,
+    version,
+    title,
+    changeNotes: changeNotes || (version === 1 ? 'Initial creation' : 'Updated'),
+    createdBy,
+    snapshot
+  });
+};
 
 export const getForms = async (req: AuthRequest, res: Response) => {
   try {
@@ -77,12 +103,22 @@ export const createForm = async (req: AuthRequest, res: Response) => {
       delete cloneData._id;
       delete cloneData.createdAt;
       delete cloneData.updatedAt;
-      cloneData.title = `${cloneData.title} (Clone)`;
+      cloneData.title = `${cloneData.title} (Copy)`;
       cloneData.status = 'draft';
       cloneData.shareableLink = Math.random().toString(36).substring(2, 10);
       cloneData.adminId = req.user._id;
 
       const clonedForm = await Form.create(cloneData);
+      const latestVersion = await FormVersion.findOne({ formId: original._id }).sort({ version: -1 }).lean();
+      const nextVersion = latestVersion?.version ? latestVersion.version + 1 : 1;
+      await createVersionSnapshot({
+        formId: clonedForm._id,
+        version: 1,
+        title: clonedForm.title,
+        changeNotes: `Cloned from ${original.title} as v${nextVersion}`,
+        createdBy: req.user._id,
+        snapshot: clonedForm.toObject()
+      });
       return res.status(201).json({ 
         success: true, 
         data: { ...clonedForm.toObject(), id: clonedForm._id, form_type: clonedForm.formType } 
@@ -113,6 +149,14 @@ export const createForm = async (req: AuthRequest, res: Response) => {
       ...data,
       adminId: req.user._id,
     });
+    await createVersionSnapshot({
+      formId: form._id,
+      version: 1,
+      title: form.title,
+      changeNotes: req.body.change_notes || 'Initial creation',
+      createdBy: req.user._id,
+      snapshot: form.toObject()
+    });
     res.status(201).json({ success: true, data: { ...form.toObject(), schema: form.form_schema, id: form._id, form_type: form.formType, slug: form.shareableLink } });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -138,8 +182,23 @@ export const updateForm = async (req: AuthRequest, res: Response) => {
     if (updates.expires_at) { updates.expiresAt = updates.expires_at; delete updates.expires_at; }
     if (updates.slug) { updates.shareableLink = updates.slug; }
     
+    const existingForm = await Form.findById(id);
+    if (!existingForm) return res.status(404).json({ error: 'Form not found' });
+
     const form = await Form.findByIdAndUpdate(id, updates, { new: true });
     if (!form) return res.status(404).json({ error: 'Form not found' });
+
+    const latestVersion = await FormVersion.findOne({ formId: form._id }).sort({ version: -1 }).lean();
+    const nextVersion = latestVersion?.version ? latestVersion.version + 1 : 1;
+    await createVersionSnapshot({
+      formId: form._id,
+      version: nextVersion,
+      title: form.title,
+      changeNotes: req.body.change_notes || 'Updated',
+      createdBy: req.user._id,
+      snapshot: form.toObject()
+    });
+
     res.status(200).json({ success: true, data: { ...form.toObject(), schema: form.form_schema } });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
