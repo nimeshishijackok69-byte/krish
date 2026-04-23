@@ -135,3 +135,93 @@ Verified passing after changes:
   successful frontend/backend production builds
 
 - The larger Email Center page still references additional endpoints such as `/smtp-config`, `/email-logs`, and `/reminder-schedules` that are not yet implemented in this backend. The requested `Email Templates` portion is now implemented and verified.
+
+---
+
+## Additional Run: Sections 8 and 9
+
+Date: 2026-04-23
+Backend: `http://localhost:5001`
+Frontend build: successful
+
+### Scope
+
+Ran the requested checks for:
+
+1. Section `8` Review System
+2. Section `9` Dashboard Tests
+
+### What I Changed
+
+#### Backend
+
+- `backend/src/models/Level.ts`
+  Added `gradeScale` storage for review-level configuration
+
+- `backend/src/controllers/reviews.ts`
+  Normalized review-level payloads for the frontend
+  Normalized reviewer names and linked review records back to their submission/form
+  Added shortlist filtering support for previous-level averages and field-value filters
+  Marked shortlisted submissions as `under_review`
+  Fixed final review status handling so explicit approve/reject actions persist correctly
+  Added backend audit-log creation for finalized review decisions
+
+- `backend/src/controllers/stats.ts`
+  Reworked `/stats` to return role-aware dashboard data for admin, reviewer, functionary, and teacher
+  Added `pendingReviews`, `completedReviews`, and functionary nomination metrics
+
+- `backend/src/controllers/submissions.ts`
+  Added query support for `id` and `status` in submission list requests
+
+#### Frontend
+
+- `frontend/src/pages/Dashboard.tsx`
+  Switched dashboard loading to role-aware stats
+  Kept recent submissions, activity timeline, status chart, and user-role cards on the admin dashboard only
+
+- `frontend/src/pages/ReviewSystem.tsx`
+  Restored the admin `Create Level` flow
+  Added the required Pending / Approved / Rejected review stat cards
+  Fixed shortlist field filtering to read real form-schema fields
+  Fixed reviewer submission loading via `/submissions/:id`
+  Prefilled saved review score/grade/comment state when reopening a review
+  Wired reviewer draft-save and final approve/reject actions to the normalized backend contract
+  Fixed submission-profile response rendering for array-based response payloads
+
+### Verification After Fixes
+
+Verified passing through live API flow:
+
+- Admin can create a review level with:
+  form, level number, name, scoring type, grade scale, reviewer IDs, blind review
+- Admin review stats now expose pending / approved / rejected counts
+- Review levels list returns configured levels in frontend-ready shape
+- Shortlisting creates review tasks and moves shortlisted submissions to `under_review`
+- Reviewer pending review loads the linked submission responses correctly
+- Reviewer can save a draft review without finalizing it
+- Reviewer can approve a review with score, grade, recommendation, and comments
+- Finalized review updates:
+  review status
+  submission status
+  audit-log trail
+
+Verified dashboard payloads after the review flow:
+
+- Admin dashboard:
+  `totalUsers`, `activeForms`, `totalSubmissions`, `pendingReviews`
+- Functionary dashboard:
+  `activeForms`, `totalNominations`, `completionRate`, pending nomination count
+- Teacher dashboard:
+  `activeForms`, `totalSubmissions`, `approved`, `under_review`
+- Reviewer dashboard:
+  `pendingReviews`, `completedReviews`, `avgScore`, `totalSubmissions`
+
+### Concrete verification snapshot
+
+- Review assignment created: `1` pending review
+- Draft save kept review in `pending`
+- Final review moved to `approved`
+- Submission status after review: `approved`
+- Review audit log found with IP metadata
+- Functionary stats sample: `2` nominations, `50%` completion
+- Reviewer stats sample: `0` pending, `1` completed, `92` avg score

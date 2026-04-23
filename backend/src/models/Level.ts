@@ -8,6 +8,7 @@ const levelSchema = new mongoose.Schema({
   submissions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Submission' }],
   blindReview: { type: Boolean, default: false },
   scoringType: { type: String, enum: ['form', 'question'], default: 'form' },
+  gradeScale: [{ type: String }],
 }, { timestamps: true });
 
 levelSchema.index({ formId: 1, levelNumber: 1 }, { unique: true });

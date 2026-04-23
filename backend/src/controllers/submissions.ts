@@ -183,11 +183,14 @@ export const updateSubmission = async (req: AuthRequest, res: Response) => {
 
 export const getSubmissions = async (req: AuthRequest, res: Response) => {
   try {
+    const id = typeof req.query.id === 'string' ? req.query.id : undefined;
     const formId = typeof req.query.formId === 'string' ? req.query.formId : undefined;
     const form_id = typeof req.query.form_id === 'string' ? req.query.form_id : undefined;
     const user_id = typeof req.query.user_id === 'string' ? req.query.user_id : undefined;
+    const status = typeof req.query.status === 'string' ? req.query.status : undefined;
     const actualFormId = formId || form_id;
     const query: any = {};
+    if (id) query._id = id;
     if (actualFormId) {
       if (actualFormId.toString().match(/^[0-9a-fA-F]{24}$/)) {
         query.formId = actualFormId;
@@ -198,6 +201,7 @@ export const getSubmissions = async (req: AuthRequest, res: Response) => {
       }
     }
     if (user_id) query.userId = user_id;
+    if (status) query.status = status;
 
     if (req.user) {
       if (req.user.role === 'teacher') {
